@@ -1,20 +1,20 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include "graph.hpp"
+#include "ecircuit.hpp"
 #include "utils.hpp"
 
 using namespace std;
 
-Graph::Graph() {
+ECircuit::ECircuit() {
 
 }
 
-Graph::~Graph() {
+ECircuit::~ECircuit() {
 
 }
 
-Graph::EdgeID Graph::addEdge(NodeID u, NodeID v, double cond) {
+ECircuit::EdgeID ECircuit::addEdge(NodeID u, NodeID v, double cond) {
     assert(u < node_edges.size());
     assert(v < node_edges.size());
 
@@ -29,14 +29,14 @@ Graph::EdgeID Graph::addEdge(NodeID u, NodeID v, double cond) {
     return e;
 }
 
-Graph::NodeID Graph::addNode() {
+ECircuit::NodeID ECircuit::addNode() {
     int n = node_edges.size();
     node_edges.push_back(vector<EdgeID>());
     return n;
 }
 
 
-bool Graph::parseTextListFile(std::string fname) {
+bool ECircuit::parseTextListFile(std::string fname) {
     if (!file_exists(fname)) {
         cerr<<"File "<<fname<<" does not exist."<<endl;
         return false;
@@ -64,7 +64,7 @@ bool Graph::parseTextListFile(std::string fname) {
     }
     for (int i = 0; i < max_node + 1; i++)
         this->addNode();
-    this->printGraph();
+    this->printECircuit();
     infile.clear();
     infile.seekg(0,ios_base::beg);
     while (std::getline(infile, line))
@@ -73,7 +73,6 @@ bool Graph::parseTextListFile(std::string fname) {
         int a, b;
         double c;
         iss >> a >> b >> c;
-        cout<<a<<" "<<b<<" "<<c<<endl;
         this->addEdge(a,b,c);
     }
 
@@ -81,7 +80,7 @@ bool Graph::parseTextListFile(std::string fname) {
     
 }
 
-void Graph::printGraph() {
+void ECircuit::printECircuit() {
     cout<<"{|"<<endl;
     cout<<"Nodes: "<< node_edges.size()<<endl;
     cout<<"Edges: "<< edges.size()<<endl;

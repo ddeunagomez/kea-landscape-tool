@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "graph.hpp"
+#include "ecircuit.hpp"
 
 
 int main(int argc, char* argv[]) {
@@ -8,9 +8,9 @@ int main(int argc, char* argv[]) {
     std::cout<< "=== Kea Landscape Tool ==="<<std::endl;
 
 
-    Graph g;
+    ECircuit g;
     g.parseTextListFile(std::string(argv[1]));
 
-    g.printGraph();
+    g.printECircuit();
     
 }
