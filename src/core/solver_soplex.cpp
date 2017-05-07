@@ -6,7 +6,7 @@ using namespace soplex;
 
 SolvSoplex::SolvSoplex(ECircuit& ec, std::vector<std::pair<int,int> >& p,
                        Mode m) :
-    Solver(ec,p) {
+    Solver(ec,p), m(m) {
     assert(p.size());
     SoPlex s;
     solvers.push_back(SoPlex());
@@ -15,6 +15,7 @@ SolvSoplex::SolvSoplex(ECircuit& ec, std::vector<std::pair<int,int> >& p,
             solvers.push_back(SoPlex());
 
         SoPlex& sp = solvers.back();
+        sp.setIntParam(SoPlex::VERBOSITY, SoPlex::VERBOSITY_ERROR);
         int s = p[i].first;
         int t = p[i].second;
 
@@ -81,11 +82,49 @@ bool SolvSoplex::updateConductance(ECircuit::EdgeID e, double v) {
 
 bool SolvSoplex::solve() {
 
+
+    for (uint i = 0; i < solvers.size(); i++) {
+        SPxSolver::Status s;
+        s = solvers[i].solve();
+        if (s != SPxSolver::OPTIMAL)
+            return false;
+    }
+    
     return true;
 }
 
 bool SolvSoplex::getCurrents(std::vector<double>& sol) {
 
+    sol.clear();
+    sol = std::vector<double>(ec.nbNodes(),0);
+    if (m == MULTI) {
+        for (uint i = 0; i < solvers.size(); i++) {
+            SoPlex& s = solvers[i];
+            DVector primal(s.numColsReal());
+            if(!s.getPrimalReal(primal) ) {
+                std::cerr<<"Error obtaining primal solution for solver "
+                         <<i<<"."<<std::endl;
+                return false;
+            }
+            assert(ec.nbNodes() == s.numColsReal());
+            for (int j = 0; j < ec.nbNodes(); j++) {
+                sol[j] += primal[j];
+            }
+
+        }
+    } else {
+        SoPlex& s = solvers[0];
+        DVector primal(s.numColsReal());
+        if(!s.getPrimalReal(primal) ) {
+            std::cerr<<"Error obtaining primal solution."<<std::endl;
+            return false;
+        }
+        for (int j = 0; j < s.numColsReal(); j++) {
+            sol[j%ec.nbNodes()] += primal[j];
+        }
+        
+    }
+    
     return true;
 }
 

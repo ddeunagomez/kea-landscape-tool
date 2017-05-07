@@ -12,6 +12,7 @@
  * Using soplex at the moment in case I want to test LNS instead of LS
  */
 class Solver{
+protected:
     ECircuit ec; //Internal copy, nobody can modify it.
     std::vector<std::pair<int,int> > focals;
 public:

@@ -17,5 +17,12 @@ int main(int argc, char* argv[]) {
     p.push_back(std::make_pair(2,3));
     p.push_back(std::make_pair(0,4));
     SolvSoplex ss(g,p,SolvSoplex::UNIQUE);
+    ss.solve();
+
+    std::vector<double> vs;
+    ss.getCurrents(vs);
+
+    for (uint i = 0; i < vs.size(); i++)
+        std::cout<<"v("<<i<<") = "<<vs[i]<<std::endl;
     
 }

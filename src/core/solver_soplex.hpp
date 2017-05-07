@@ -11,7 +11,8 @@
  * plenty of small probems, or one big problem.
  */
 class SolvSoplex : public Solver {
-
+public:
+    enum Mode {UNIQUE, MULTI};
 private:
     struct RC {
         int row;
@@ -19,8 +20,9 @@ private:
     };
     std::vector<soplex::SoPlex> solvers;
     std::unordered_map<ECircuit::EdgeID, std::vector<RC> > edge_pos;
+    Mode m;
 public:
-    enum Mode {UNIQUE, MULTI};
+
     SolvSoplex(ECircuit& ec, std::vector<std::pair<int,int> >& p, Mode m = MULTI);
     ~SolvSoplex();
 
