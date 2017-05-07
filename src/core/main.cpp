@@ -14,8 +14,8 @@ int main(int argc, char* argv[]) {
 
     g.printECircuit();
     std::vector<std::pair<int,int> > p;
-    p.push_back(std::make_pair(2,3));
-    p.push_back(std::make_pair(0,4));
+    //p.push_back(std::make_pair(2,3));
+    p.push_back(std::make_pair(11,88));
     SolvSoplex ss(g,p,SolvSoplex::UNIQUE);
     ss.solve();
 
