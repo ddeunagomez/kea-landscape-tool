@@ -1,6 +1,9 @@
 #ifndef _SOLVER_SOPLEX_HPP_
 #define _SOLVER_SOPLEX_HPP_
 
+#ifdef SOLVER_USE_SOPLEX
+
+
 #include "solver_wrapper.hpp"
 #include "soplex.h"
 #include <unordered_map>
@@ -11,8 +14,7 @@
  * plenty of small probems, or one big problem.
  */
 class SolvSoplex : public Solver {
-public:
-    enum Mode {UNIQUE, MULTI};
+
 private:
     struct RC {
         int row;
@@ -33,5 +35,7 @@ public:
     bool getCurrents(std::vector<double>& sol);
 
 };
+
+#endif /*SOLVER_USE_SOPLEX */
 
 #endif /* _SOLVER_SOPLEX_HPP_ */

@@ -1,14 +1,28 @@
+SOLVER_USE_SOPLEX = true
 SOPLEXPATH =../../lib/soplex-3.0.0/lib/
 SOPLEXINCLUDE =../../lib/soplex-3.0.0/src/
-SOPLEXDEP =../../lib/soplex-3.0.0/src/
+
+SOLVER_USE_ARMADILLO = true
+ARMADILLOPATH =../../lib/armadillo-7.800.2/lib/usr/lib
+ARMADILLOINCLUDE =../../lib/armadillo-7.800.2/lib/usr/include
 
 CC = g++
-CPPFLAGS = -g -std=c++0x -O3 -I $(SOPLEXINCLUDE)
+CPPFLAGS = -g -std=c++0x -O3 
 #CPPFLAGS += -DNDEBUG
 CPPFLAGS += -pg -ggdb
 CPPFLAGS += -Wall -Werror=return-type
 
-LIBS = -L $(SOPLEXPATH)  -lsoplex -lz -lgmp 
+
+ifeq ($(SOLVER_USE_SOPLEX),true)
+	CPPFLAGS += -DSOLVER_USE_SOPLEX
+	CPPFLAGS += -I $(SOPLEXINCLUDE)
+	LIBS += -L $(SOPLEXPATH)  -lsoplex -lz -lgmp 	
+endif
+ifeq ($(SOLVER_USE_ARMADILLO),true)
+	CPPFLAGS += -DSOLVER_USE_ARMADILLO
+	CPPFLAGS += -I $(ARMADILLOINCLUDE)
+	LIBS += -L $(ARMADILLOPATH)  -larmadillo -llapack 	
+endif
 
 SRCS = $(wildcard ./src/core/*.cpp) 
 OBJS = $(addsuffix .o, $(basename $(SRCS)))

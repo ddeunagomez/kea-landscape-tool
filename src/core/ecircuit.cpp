@@ -64,7 +64,7 @@ bool ECircuit::parseTextListFile(std::string fname) {
     }
     for (int i = 0; i < max_node + 1; i++)
         this->addNode();
-    this->printECircuit();
+    //this->printECircuit();
     infile.clear();
     infile.seekg(0,ios_base::beg);
     while (std::getline(infile, line))

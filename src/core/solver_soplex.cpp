@@ -1,4 +1,7 @@
+#ifdef SOLVER_USE_SOPLEX
+
 #include "solver_soplex.hpp"
+#include "utils.hpp"
 
 using namespace soplex;
 
@@ -22,13 +25,13 @@ SolvSoplex::SolvSoplex(ECircuit& ec, std::vector<std::pair<int,int> >& p,
         int rshift = sp.numRowsReal();
         int cshift = m == UNIQUE ? i*ec.nbNodes() : sp.numColsReal();
 
-        std::cout<<"Num rows: "<<rshift<<std::endl;
-        std::cout<<"Num cols: "<<cshift<<std::endl;
+        //std::cout<<"Num rows: "<<rshift<<std::endl;
+        //std::cout<<"Num cols: "<<cshift<<std::endl;
         
         for (int j = 0; j < ec.nbNodes(); j++) {
             DSVector row;
             row.add(ec.nbNodes()*(m==UNIQUE ? p.size() : 1) - 1,0);
-            std::cout<<"Adding row of size "<< (ec.nbNodes()-1)*(m==UNIQUE ? p.size() : 1)<<std::endl;
+            //std::cout<<"Adding row of size "<< (ec.nbNodes()-1)*(m==UNIQUE ? p.size() : 1)<<std::endl;
             sp.addRowReal(LPRow(row, LPRowReal::EQUAL, j == s ? 1.0 : 0.0));
         }
         
@@ -52,8 +55,8 @@ SolvSoplex::SolvSoplex(ECircuit& ec, std::vector<std::pair<int,int> >& p,
             }
             sp.changeElementReal(rshift+n, cshift+n,s);
         }
-        std::cout<<"Num rows: "<<sp.numRowsReal()<<std::endl;
-        std::cout<<"Num cols: "<<sp.numColsReal()<<std::endl;
+        //std::cout<<"Num rows: "<<sp.numRowsReal()<<std::endl;
+        //std::cout<<"Num cols: "<<sp.numColsReal()<<std::endl;
         sp.changeObjReal(cshift+s,1);
        
     }
@@ -76,7 +79,7 @@ SolvSoplex::~SolvSoplex() {
 
 bool SolvSoplex::updateConductance(ECircuit::EdgeID e, double v) {
 
-
+    UNSUPPORTED;
     return true;
 }
 
@@ -128,3 +131,4 @@ bool SolvSoplex::getCurrents(std::vector<double>& sol) {
     return true;
 }
 
+#endif /*SOLVER_USE_SOPLEX */

@@ -11,13 +11,15 @@ int main(int argc, char* argv[]) {
 
     ECircuit g;
     g.parseTextListFile(std::string(argv[1]));
-
-    g.printECircuit();
+    std::cout<<"Loaded file"<<std::endl;
+    //g.printECircuit();
     std::vector<std::pair<int,int> > p;
     //p.push_back(std::make_pair(2,3));
-    p.push_back(std::make_pair(11,88));
+    p.push_back(std::make_pair(0,4));
     SolvSoplex ss(g,p,SolvSoplex::UNIQUE);
+    std::cout<<"Created model"<<std::endl;
     ss.solve();
+    std::cout<<"Solved model"<<std::endl;
 
     std::vector<double> vs;
     ss.getCurrents(vs);
