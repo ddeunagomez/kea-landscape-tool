@@ -7,6 +7,8 @@
 
 #define UNSUPPORTED  do { \
         std::cerr<<"Unsupported function "<<__FILE__<<":"<<__LINE__<<std::endl; \
+        std::cerr<<"Terminating now"<<std::endl;                        \
+        exit(1);                                \
     } while(0)                                                          
 
 inline bool file_exists (const std::string& name) {

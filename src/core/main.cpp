@@ -3,6 +3,7 @@
 
 #include "ecircuit.hpp"
 #include "solver_soplex.hpp"
+#include "solver_armadillo.hpp"
 
 int main(int argc, char* argv[]) {
 
@@ -16,7 +17,8 @@ int main(int argc, char* argv[]) {
     std::vector<std::pair<int,int> > p;
     //p.push_back(std::make_pair(2,3));
     p.push_back(std::make_pair(0,4));
-    SolvSoplex ss(g,p,SolvSoplex::UNIQUE);
+    //SolvSoplex ss(g,p,SolvSoplex::UNIQUE);
+    SolvArmadillo ss(g,p,SolvSoplex::MULTI);
     std::cout<<"Created model"<<std::endl;
     ss.solve();
     std::cout<<"Solved model"<<std::endl;

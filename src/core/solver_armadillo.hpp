@@ -6,6 +6,8 @@
 
 #include "solver_wrapper.hpp"
 #include <unordered_map>
+#include <armadillo>
+
 
 /*
  * Solver using Armadillo. Seems to be much faster than SoPlex
@@ -14,6 +16,10 @@
 class SolvArmadillo : public Solver {
 
 private:
+    std::vector<arma::sp_mat> laplacians;
+    std::vector<arma::vec> iflow;
+    std::vector<arma::vec> voltages;
+    
     Mode m;
 public:
 
