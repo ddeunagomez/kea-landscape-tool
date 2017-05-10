@@ -96,7 +96,7 @@ bool SolvSoplex::solve() {
     return true;
 }
 
-bool SolvSoplex::getCurrents(std::vector<double>& sol) {
+bool SolvSoplex::getVoltages(std::vector<double>& sol) {
 
     sol.clear();
     sol = std::vector<double>(ec.nbNodes(),0);

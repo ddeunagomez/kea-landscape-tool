@@ -2,51 +2,68 @@
 
 #include "solver_armadillo.hpp"
 #include "utils.hpp"
+#include <math.h>
 
 using namespace arma;
 
-SolvArmadillo::SolvArmadillo(ECircuit& ec, std::vector<std::pair<int,int> >& p, Mode m) : Solver(ec,p) {
+SolvArmadillo::SolvArmadillo(ECircuit& ec, std::vector<std::pair<int,int> >& p,
+                             Mode m) : Solver(ec,p) {
 
     int n = ec.nbNodes();
-    int dim = m == MULTI ? n : n * p.size();
+    int dim = m == MULTI ? n-1 : (n-1) * p.size();
     laplacians.push_back(sp_mat(dim,dim));
     iflow.push_back(zeros<vec>(dim));
     voltages.push_back(vec(dim));
     for (uint i = 0; i < p.size(); i++) {
-        if (i > 0 && m == MULTI) {
-            laplacians.push_back(sp_mat(n,n));
-            iflow.push_back(zeros<vec>(n));
-            voltages.push_back(vec(n));
-        }
-        sp_mat& lap = laplacians.back();        
         int s = p[i].first;
         int t = p[i].second;
+        if (s == t)
+            continue;
+        if (i > 0 && m == MULTI) {
+            laplacians.push_back(sp_mat(n - 1,n - 1));
+            iflow.push_back(zeros<vec>(n - 1));
+            voltages.push_back(vec(n - 1));
+        }
+        sp_mat& lap = laplacians.back();        
 
-        int rshift = m == UNIQUE ? i*n : 0;
-        int cshift = m == UNIQUE ? i*n : 0;
+        int rshift = m == UNIQUE ? i*(n-1) : 0;
+        int cshift = m == UNIQUE ? i*(n-1) : 0;
 
-        iflow.back()[rshift+s] = 1;
+        if (s < t)
+            iflow.back()[rshift+s] = 1;
+        else
+            iflow.back()[rshift+s - 1] = 1;
         
         for (int e = 0; e < ec.nbEdges(); e++) {
             int u = ec.getU(e);
             int v = ec.getV(e);
             if (u == t || v == t) {
                 continue;
-            }
+            }            
+            if (u > t) u--;
+            if (v > t) v--;
+            //std::cout<<"Access ("<<rshift+u<<","<<cshift+v<<")"<<std::endl;
+            //std::cout<<"Access ("<<rshift+v<<","<<cshift+u<<")"<<std::endl;
             lap(rshift+u, cshift+v) = lap(rshift+u, cshift+v)-ec.getCond(e);
             lap(rshift+v, cshift+u) = lap(rshift+v, cshift+u)-ec.getCond(e);
         }
-        for (int i = 0; i < ec.nbNodes(); i++) {
-            if (i == t) continue;
+        //std::cout<<"Done "<<t<<" "<<rshift<<" "<<cshift<<std::endl;
+
+        for (int j = 0; j < n; j++) {
+            if (j == t) continue;
+            int rj = j;
+            if (j > t)
+                rj = j - 1;
             double s = 0;
-            for (int j = 0; j < ec.nbEdges(i); j++) {
-                ECircuit::EdgeID e = ec.getEdgeFrom(i,j);
+            for (int k = 0; k < ec.nbEdges(rj); k++) {
+                ECircuit::EdgeID e = ec.getEdgeFrom(rj,k);
                 s += ec.getCond(e);
             }
-            lap(rshift+i, cshift+i) = s;
+            //std::cout<<"Diag ("<<rshift+rj<<","<<cshift+rj<<")"<<std::endl;
+            lap(rshift+rj, cshift+rj) = s;
         }
-        
-        //*
+        //std::cout<<"Done"<<std::endl;
+        /*
         mat laptmp(lap);
         laptmp.print();
         iflow.back().print();
@@ -66,24 +83,33 @@ bool SolvArmadillo::updateConductance(ECircuit::EdgeID e, double v) {
 }
 bool SolvArmadillo::solve() {
     for (uint i = 0; i < laplacians.size(); i++) {
-        sp_mat laptmp(laplacians[i].n_rows - 1, laplacians[i].n_cols - 1);
-        for (int j = 0; j < 4; j++)
-            for (int k = 0; k < 4; k++)
-                laptmp(j,k) = laplacians[i](j,k);
-        vec iftmp(4);
-        for (int j = 0; j < 4; j++)
-            iftmp(j) = iflow[i](j);
-        //std::cout<<"Det: "<<det(laptmp)<<std::endl;
-        voltages[i] = spsolve(laptmp,iftmp,"lapack");
-        for (int j = 0; j < voltages[i].n_rows; j++)
-            std::cout<<"v("<<j<<") = "<<voltages[i](j)<<std::endl;
+        voltages[i] = spsolve(laplacians[i],iflow[i],"lapack");
     }
     return true;
 }
 
-//Currents indexed by node ids
-bool SolvArmadillo::getCurrents(std::vector<double>& sol) {
-    UNSUPPORTED;
+
+//Voltages indexed by node ids
+bool SolvArmadillo::getVoltages(std::vector<double>& sol) {
+    sol = std::vector<double>(ec.nbNodes(),0);
+
+    for (uint i = 0; i < focals.size(); i++) {
+        int s = focals[i].first;
+        int t = focals[i].second;
+        if (s == t)
+            continue;
+
+        vec& vi = voltages[i];
+        for (int j = 0; j < ec.nbNodes(); j++) {
+            if (j == t) continue;
+            if (j > t)
+                sol[j] += vi[j - 1];
+            else
+                sol[j] += vi[j];
+        }
+        
+    }
+    
     return true;
 }
 

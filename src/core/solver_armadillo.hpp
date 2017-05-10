@@ -29,9 +29,7 @@ public:
     bool updateConductance(ECircuit::EdgeID e, double v);
     bool solve();
 
-    //Currents indexed by node ids
-    bool getCurrents(std::vector<double>& sol);
-
+    bool getVoltages(std::vector<double>& sol);
 };
 
 #endif /*SOLVER_USE_ARMADILLO */

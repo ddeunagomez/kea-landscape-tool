@@ -26,8 +26,9 @@ public:
     virtual bool updateConductance(ECircuit::EdgeID e, double v) = 0;
     virtual bool solve() = 0;
 
-    //Currents indexed by node ids
-    virtual bool getCurrents(std::vector<double>& sol) = 0;
+    //Voltages indexed by node ids
+    virtual bool getVoltages(std::vector<double>& sol) = 0;
+
 };
 
 #endif /*_SOLVER_WRAPPER_HPP_ */
