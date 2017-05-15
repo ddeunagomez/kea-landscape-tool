@@ -1,3 +1,5 @@
+#ifndef UTILS_HPP
+#define UTILS_HPP
 #include <sys/stat.h>
 #include <string>
 #include <iostream>
@@ -16,3 +18,4 @@ inline bool file_exists (const std::string& name) {
   return (stat (name.c_str(), &buffer) == 0); 
 }
 
+#endif
