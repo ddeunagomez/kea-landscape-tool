@@ -55,8 +55,8 @@ SolvArmadillo::SolvArmadillo(ECircuit& ec, std::vector<std::pair<int,int> >& p,
             if (j > t)
                 rj = j - 1;
             double s = 0;
-            for (int k = 0; k < ec.nbEdges(rj); k++) {
-                ECircuit::EdgeID e = ec.getEdgeFrom(rj,k);
+            for (int k = 0; k < ec.nbEdges(j); k++) {
+                ECircuit::EdgeID e = ec.getEdgeFrom(j,k);
                 s += ec.getCond(e);
             }
             //std::cout<<"Diag ("<<rshift+rj<<","<<cshift+rj<<")"<<std::endl;

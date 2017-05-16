@@ -72,10 +72,7 @@ SolvItPETSc::SolvItPETSc(ECircuit& ec, std::vector<std::pair<int,int> >& p,
             voltages.push_back(volt1);            
         }
         Mat* lap = laplacians.back();
-        //Delay constructing Mat object
-        //So you only need to assemble once
-        double mat[dim][dim]; 
-        memset(mat,0,sizeof(double)*dim*dim);
+        ierr = MatAssemblyBegin(*lap,MAT_FINAL_ASSEMBLY);ERROR1(ierr);
         Vec* ifl = iflow.back();
         int rshift = m == UNIQUE ? i*(n-1) : 0;
         int cshift = m == UNIQUE ? i*(n-1) : 0;
@@ -94,24 +91,33 @@ SolvItPETSc::SolvItPETSc(ECircuit& ec, std::vector<std::pair<int,int> >& p,
             }            
             if (u > t) u--;
             if (v > t) v--;
-            mat[rshift+u][cshift+v] = mat[rshift+u][cshift+v]-ec.getCond(e);
-            mat[rshift+v][cshift+u] = mat[rshift+v][cshift+u]-ec.getCond(e);
+            int row = rshift+u;
+            int col = cshift+v;
+            double val = -ec.getCond(e);
+            ierr = MatSetValues(*lap,1,&row,1,&col,&val,INSERT_VALUES);ERROR1(ierr);
+            row = rshift+v;
+            col = cshift+u;
+            ierr = MatSetValues(*lap,1,&row,1,&col,&val,INSERT_VALUES);ERROR1(ierr);
+            //mat[rshift+u][cshift+v] = mat[rshift+u][cshift+v]-ec.getCond(e);
+            //mat[rshift+v][cshift+u] = mat[rshift+v][cshift+u]-ec.getCond(e);
         }
-
         for (int j = 0; j < n; j++) {
             if (j == t) continue;
             int rj = j;
             if (j > t)
                 rj = j - 1;
             double s = 0;
-            for (int k = 0; k < ec.nbEdges(rj); k++) {
-                ECircuit::EdgeID e = ec.getEdgeFrom(rj,k);
+            for (int k = 0; k < ec.nbEdges(j); k++) {
+                ECircuit::EdgeID e = ec.getEdgeFrom(j,k);
                 s += ec.getCond(e);
             }
-            mat[rshift+rj][cshift+rj] = s;
+            int row = rshift+rj;
+            int col = cshift+rj;
+            ierr = MatSetValues(*lap,1,&row,1,&col,&s,INSERT_VALUES);ERROR1(ierr);
+            //mat[rshift+rj][cshift+rj] = s;
         }
-
-        for (int row = 0; row < dim; row++) {
+        ierr = MatAssemblyEnd(*lap1,MAT_FINAL_ASSEMBLY);ERROR1(ierr);
+        /*for (int row = 0; row < dim; row++) {
             for (int col = 0; col < dim; col++) {
                 if (mat[row][col] != 0.0) {
                     ierr = MatSetValues(*lap,1,&row,1,&col,&mat[row][col],
@@ -119,9 +125,8 @@ SolvItPETSc::SolvItPETSc(ECircuit& ec, std::vector<std::pair<int,int> >& p,
                     ERROR1(ierr);
                 }
             }
-        }
-        ierr = MatAssemblyBegin(*lap,MAT_FINAL_ASSEMBLY);ERROR1(ierr);
-        ierr = MatAssemblyEnd(*lap,MAT_FINAL_ASSEMBLY);ERROR1(ierr);
+            }*/
+
         /*
         printf("LAP:\n");
         ierr = MatView(*lap,PETSC_VIEWER_STDOUT_WORLD); ERROR1(ierr);
@@ -162,7 +167,7 @@ bool SolvItPETSc::solve() {
         ierr = KSPSetOperators(ksp,*lap,*lap);ERROR1(ierr);
         ierr = KSPGetPC(ksp,&pc);ERROR1(ierr);
         ierr = PCSetType(pc,PCJACOBI);ERROR1(ierr);
-        ierr = KSPSetTolerances(ksp,1.e-20,1.e-20,PETSC_DEFAULT,PETSC_DEFAULT);ERROR1(ierr);
+        ierr = KSPSetTolerances(ksp,1.e-20,PETSC_DEFAULT,PETSC_DEFAULT,PETSC_DEFAULT);ERROR1(ierr);
         ierr = KSPSetFromOptions(ksp);ERROR1(ierr);
         ierr = KSPSetType(ksp,KSPCG);ERROR1(ierr);
 
@@ -171,7 +176,6 @@ bool SolvItPETSc::solve() {
         ierr = KSPSetInitialGuessNonzero(ksp,PETSC_TRUE);CHKERRQ(ierr);
         ierr = KSPSolve(ksp,*iflow[i],*voltages[i]);ERROR1(ierr);
         ierr = VecView(*voltages[i],PETSC_VIEWER_STDOUT_WORLD); ERROR1(ierr);
-        exit(0);
     }
     return true;
 }

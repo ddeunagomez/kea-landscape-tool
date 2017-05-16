@@ -16,11 +16,11 @@ int main(int argc, char* argv[]) {
     std::cout<<"Loaded file"<<std::endl;
     //g.printECircuit();
     std::vector<std::pair<int,int> > p;
-    p.push_back(std::make_pair(12,88));
+    p.push_back(std::make_pair(7,18));
     //p.push_back(std::make_pair(101,888));
     //SolvSoplex ss(g,p,SolvSoplex::UNIQUE);
-    SolvArmadillo ss(g,p,SolvSoplex::MULTI);
-    //SolvItPETSc ss(g,p,&argc,&argv,SolvSoplex::UNIQUE);
+    //SolvArmadillo ss(g,p,SolvSoplex::UNIQUE);
+    SolvItPETSc ss(g,p,&argc,&argv,SolvSoplex::UNIQUE);
     std::cout<<"Created model"<<std::endl;
     ss.solve();
     std::cout<<"Solved model"<<std::endl;
