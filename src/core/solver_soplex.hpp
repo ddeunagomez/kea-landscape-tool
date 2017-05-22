@@ -25,10 +25,13 @@ private:
     Mode m;
 public:
 
-    SolvSoplex(ECircuit& ec, std::vector<std::pair<int,int> >& p, Mode m = MULTI);
+    SolvSoplex(std::vector<std::pair<int,int> >& p, Mode m = MULTI);
     ~SolvSoplex();
 
-    bool updateConductance(ECircuit::EdgeID e, double v);
+    bool compile();
+    
+    bool updateConductances(std::vector<ECircuit::EdgeID> e,
+                            std::vector<double> v);
     bool solve();
     bool getVoltages(std::vector<double>& sol);
 

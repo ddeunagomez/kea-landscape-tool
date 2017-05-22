@@ -6,10 +6,24 @@
 
 using namespace arma;
 
-SolvArmadillo::SolvArmadillo(ECircuit& ec, std::vector<std::pair<int,int> >& p,
-                             Mode m) : Solver(ec,p) {
+SolvArmadillo::SolvArmadillo(std::vector<std::pair<int,int> >& p,
+                             Mode m) : Solver(p) {
 
-    int n = ec.nbNodes();
+   
+}
+
+SolvArmadillo::~SolvArmadillo() {
+
+}
+
+bool SolvArmadillo::compile() {
+    if(!Solver::compile()) return false;
+    std::vector<std::pair<int,int> >& p = focals;
+    laplacians.clear();
+    iflow.clear();
+    voltages.clear();
+
+    int n = nbNodes();
     int dim = m == MULTI ? n-1 : (n-1) * p.size();
     laplacians.push_back(sp_mat(dim,dim));
     iflow.push_back(zeros<vec>(dim));
@@ -34,9 +48,9 @@ SolvArmadillo::SolvArmadillo(ECircuit& ec, std::vector<std::pair<int,int> >& p,
         else
             iflow.back()[rshift+s - 1] = 1;
         
-        for (int e = 0; e < ec.nbEdges(); e++) {
-            int u = ec.getU(e);
-            int v = ec.getV(e);
+        for (int e = 0; e < nbEdges(); e++) {
+            int u = getU(e);
+            int v = getV(e);
             if (u == t || v == t) {
                 continue;
             }            
@@ -44,8 +58,8 @@ SolvArmadillo::SolvArmadillo(ECircuit& ec, std::vector<std::pair<int,int> >& p,
             if (v > t) v--;
             //std::cout<<"Access ("<<rshift+u<<","<<cshift+v<<")"<<std::endl;
             //std::cout<<"Access ("<<rshift+v<<","<<cshift+u<<")"<<std::endl;
-            lap(rshift+u, cshift+v) = lap(rshift+u, cshift+v)-ec.getCond(e);
-            lap(rshift+v, cshift+u) = lap(rshift+v, cshift+u)-ec.getCond(e);
+            lap(rshift+u, cshift+v) = lap(rshift+u, cshift+v)-getCond(e);
+            lap(rshift+v, cshift+u) = lap(rshift+v, cshift+u)-getCond(e);
         }
         //std::cout<<"Done "<<t<<" "<<rshift<<" "<<cshift<<std::endl;
 
@@ -55,9 +69,9 @@ SolvArmadillo::SolvArmadillo(ECircuit& ec, std::vector<std::pair<int,int> >& p,
             if (j > t)
                 rj = j - 1;
             double s = 0;
-            for (int k = 0; k < ec.nbEdges(j); k++) {
-                ECircuit::EdgeID e = ec.getEdgeFrom(j,k);
-                s += ec.getCond(e);
+            for (int k = 0; k < nbEdges(j); k++) {
+                ECircuit::EdgeID e = getEdgeFrom(j,k);
+                s += getCond(e);
             }
             //std::cout<<"Diag ("<<rshift+rj<<","<<cshift+rj<<")"<<std::endl;
             lap(rshift+rj, cshift+rj) = s;
@@ -70,14 +84,11 @@ SolvArmadillo::SolvArmadillo(ECircuit& ec, std::vector<std::pair<int,int> >& p,
         std::cout<<std::endl;
         //*/
     }
-    
+    return true;
 }
 
-SolvArmadillo::~SolvArmadillo() {
-
-}
-
-bool SolvArmadillo::updateConductance(ECircuit::EdgeID e, double v) {
+bool SolvArmadillo::updateConductances(std::vector<ECircuit::EdgeID> e,
+                                     std::vector<double> v) {
     UNSUPPORTED;
     return true;
 }
@@ -91,7 +102,7 @@ bool SolvArmadillo::solve() {
 
 //Voltages indexed by node ids
 bool SolvArmadillo::getVoltages(std::vector<double>& sol) {
-    sol = std::vector<double>(ec.nbNodes(),0);
+    sol = std::vector<double>(nbNodes(),0);
 
     for (uint i = 0; i < focals.size(); i++) {
         int s = focals[i].first;
@@ -100,7 +111,7 @@ bool SolvArmadillo::getVoltages(std::vector<double>& sol) {
             continue;
 
         vec& vi = voltages[i];
-        for (int j = 0; j < ec.nbNodes(); j++) {
+        for (int j = 0; j < nbNodes(); j++) {
             if (j == t) continue;
             if (j > t)
                 sol[j] += vi[j - 1];

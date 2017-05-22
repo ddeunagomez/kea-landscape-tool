@@ -11,19 +11,27 @@
  * clever as soplex or cplex, just needs to solve a system of equations
  * Using soplex at the moment in case I want to test LNS instead of LS
  */
-class Solver{
+class Solver : public ECircuit {
 
 protected:
-    ECircuit ec; //Internal copy, nobody can modify it.
     std::vector<std::pair<int,int> > focals;
 public:
     enum Mode {UNIQUE, MULTI};
     //Electrical circuit and pairs of focals
-    Solver(ECircuit& ec, std::vector<std::pair<int,int> >& p) :
-    ec(ec), focals(p) {};
+    Solver(std::vector<std::pair<int,int> >& p) :
+        focals(p) {};    
     virtual ~Solver() {};
 
-    virtual bool updateConductance(ECircuit::EdgeID e, double v) = 0;
+    virtual bool compile() {
+        for (uint i = 0; i < focals.size(); i++)
+            if (focals[i].first < 0 || focals[i].first >= nbNodes() ||
+                focals[i].second < 0 || focals[i].second >= nbNodes())
+                return false;
+        return nbNodes() > 1 && focals.size() > 0;
+    }
+    
+    virtual bool updateConductances(std::vector<ECircuit::EdgeID> e,
+                                    std::vector<double> v) = 0;
     virtual bool solve() = 0;
 
     //Voltages indexed by node ids

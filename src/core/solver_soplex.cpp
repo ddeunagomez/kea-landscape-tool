@@ -7,10 +7,21 @@ using namespace soplex;
 
 #define DEBUG 1
 
-SolvSoplex::SolvSoplex(ECircuit& ec, std::vector<std::pair<int,int> >& p,
+SolvSoplex::SolvSoplex(std::vector<std::pair<int,int> >& p,
                        Mode m) :
-    Solver(ec,p), m(m) {
+    Solver(p), m(m) {
+    
+}
+
+SolvSoplex::~SolvSoplex() {
+
+};
+
+bool SolvSoplex::compile() {
+    if(!Solver::compile()) return false;
+    std::vector<std::pair<int,int> >& p = focals;
     assert(p.size());
+    solvers.clear();
     SoPlex s;
     solvers.push_back(SoPlex());
     for (uint i = 0; i < p.size(); i++) {
@@ -23,35 +34,35 @@ SolvSoplex::SolvSoplex(ECircuit& ec, std::vector<std::pair<int,int> >& p,
         int t = p[i].second;
 
         int rshift = sp.numRowsReal();
-        int cshift = m == UNIQUE ? i*ec.nbNodes() : sp.numColsReal();
+        int cshift = m == UNIQUE ? i*nbNodes() : sp.numColsReal();
 
         //std::cout<<"Num rows: "<<rshift<<std::endl;
         //std::cout<<"Num cols: "<<cshift<<std::endl;
         
-        for (int j = 0; j < ec.nbNodes(); j++) {
+        for (int j = 0; j < nbNodes(); j++) {
             DSVector row;
-            row.add(ec.nbNodes()*(m==UNIQUE ? p.size() : 1) - 1,0);
-            //std::cout<<"Adding row of size "<< (ec.nbNodes()-1)*(m==UNIQUE ? p.size() : 1)<<std::endl;
+            row.add(nbNodes()*(m==UNIQUE ? p.size() : 1) - 1,0);
+            //std::cout<<"Adding row of size "<< (nbNodes()-1)*(m==UNIQUE ? p.size() : 1)<<std::endl;
             sp.addRowReal(LPRow(row, LPRowReal::EQUAL, j == s ? 1.0 : 0.0));
         }
         
-        for (int e = 0; e < ec.nbEdges(); e++) {
-            int u = ec.getU(e);
-            int v = ec.getV(e);
+        for (int e = 0; e < nbEdges(); e++) {
+            int u = getU(e);
+            int v = getV(e);
             if (u == t || v == t) {
                 continue;
             }
             sp.changeElementReal(rshift+u, cshift+v,
-                                 sp.coefReal(rshift+u, cshift+v)-ec.getCond(e));
+                                 sp.coefReal(rshift+u, cshift+v)-getCond(e));
             sp.changeElementReal(rshift+v, cshift+u,
-                                 sp.coefReal(rshift+v, cshift+u)-ec.getCond(e));
+                                 sp.coefReal(rshift+v, cshift+u)-getCond(e));
         }
-        for (int n = 0; n < ec.nbNodes(); n++) {
+        for (int n = 0; n < nbNodes(); n++) {
             if (n == t) continue;
             double s = 0;
-            for (int j = 0; j < ec.nbEdges(n); j++) {
-                ECircuit::EdgeID e = ec.getEdgeFrom(n,j);
-                s += ec.getCond(e);
+            for (int j = 0; j < nbEdges(n); j++) {
+                ECircuit::EdgeID e = getEdgeFrom(n,j);
+                s += getCond(e);
             }
             sp.changeElementReal(rshift+n, cshift+n,s);
         }
@@ -70,15 +81,11 @@ SolvSoplex::SolvSoplex(ECircuit& ec, std::vector<std::pair<int,int> >& p,
                 solvers[i].writeFileReal(fn.c_str(), NULL, NULL, NULL);
             }
     }
-    
+    return true;
 }
 
-SolvSoplex::~SolvSoplex() {
-
-};
-
-bool SolvSoplex::updateConductance(ECircuit::EdgeID e, double v) {
-
+bool SolvSoplex::updateConductances(std::vector<ECircuit::EdgeID> e,
+                                     std::vector<double> v) {
     UNSUPPORTED;
     return true;
 }
@@ -99,7 +106,7 @@ bool SolvSoplex::solve() {
 bool SolvSoplex::getVoltages(std::vector<double>& sol) {
 
     sol.clear();
-    sol = std::vector<double>(ec.nbNodes(),0);
+    sol = std::vector<double>(nbNodes(),0);
     if (m == MULTI) {
         for (uint i = 0; i < solvers.size(); i++) {
             SoPlex& s = solvers[i];
@@ -109,8 +116,8 @@ bool SolvSoplex::getVoltages(std::vector<double>& sol) {
                          <<i<<"."<<std::endl;
                 return false;
             }
-            assert(ec.nbNodes() == s.numColsReal());
-            for (int j = 0; j < ec.nbNodes(); j++) {
+            assert(nbNodes() == s.numColsReal());
+            for (int j = 0; j < nbNodes(); j++) {
                 sol[j] += primal[j];
             }
 
@@ -123,7 +130,7 @@ bool SolvSoplex::getVoltages(std::vector<double>& sol) {
             return false;
         }
         for (int j = 0; j < s.numColsReal(); j++) {
-            sol[j%ec.nbNodes()] += primal[j];
+            sol[j%nbNodes()] += primal[j];
         }
         
     }

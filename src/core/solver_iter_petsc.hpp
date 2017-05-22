@@ -14,17 +14,24 @@
 class SolvItPETSc : public Solver {
 
 private:
+    //Argument options
+    int argc;
+    char** argv;
+    
     std::vector<Mat*> laplacians;
     std::vector<Vec*> iflow;
     std::vector<Vec*> voltages;
     Mode m;
 public:
 
-    SolvItPETSc(ECircuit& ec, std::vector<std::pair<int,int> >& p,
+    SolvItPETSc(std::vector<std::pair<int,int> >& p,
                 int* argc, char*** argv, Mode m = MULTI);
     ~SolvItPETSc();
 
-    bool updateConductance(ECircuit::EdgeID e, double v);
+    bool compile();
+    
+    bool updateConductances(std::vector<ECircuit::EdgeID> e,
+                            std::vector<double> v);
     bool solve();
 
     bool getVoltages(std::vector<double>& sol);

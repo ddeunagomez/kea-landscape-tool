@@ -23,10 +23,13 @@ private:
     Mode m;
 public:
 
-    SolvArmadillo(ECircuit& ec, std::vector<std::pair<int,int> >& p, Mode m = MULTI);
+    SolvArmadillo(std::vector<std::pair<int,int> >& p, Mode m = MULTI);
     ~SolvArmadillo();
 
-    bool updateConductance(ECircuit::EdgeID e, double v);
+    bool compile();
+    
+    bool updateConductances(std::vector<ECircuit::EdgeID> e,
+                            std::vector<double> v);
     bool solve();
 
     bool getVoltages(std::vector<double>& sol);

@@ -3,6 +3,7 @@
 #include "solver_iter_petsc.hpp"
 #include "utils.hpp"
 #include <math.h>
+#include <string>
 
 #define ERROR(c,str) do { if (c) {                                  \
         std::cerr<<str<<" "<<__FILE__<<":"<<__LINE__<<std::endl;   \
@@ -10,13 +11,38 @@
         } } while(0)
 #define ERROR1(c) ERROR(c,"Error: ")
 
-SolvItPETSc::SolvItPETSc(ECircuit& ec, std::vector<std::pair<int,int> >& p,
-                         int* argc, char*** argv,
-                             Mode m) : Solver(ec,p) {
+SolvItPETSc::SolvItPETSc(std::vector<std::pair<int,int> >& p,
+                         int* _argc, char*** _argv,
+                             Mode m) : Solver(p) {
 
-    PetscInitialize(argc,argv,(char*)0,"PETSc");
-    PetscMPIInt size;
+    argc = *_argc;
+    argv = new char*[argc];
+    for (int i = 0; i < argc; i++) {
+        argv[i] = new char[strlen((*_argv)[i])];
+        memcpy(argv[i],(*_argv)[i],strlen((*_argv)[i])*sizeof(char));
+    }
+}
+
+SolvItPETSc::~SolvItPETSc() {
+
+}
+
+bool SolvItPETSc::compile() {
+    if(!Solver::compile()) return false;
+    std::vector<std::pair<int,int> >& p = focals;
     PetscErrorCode ierr;
+    for (uint i = 0; i < laplacians.size(); i++){
+        ierr = MatDestroy(laplacians[i]); ERROR1(ierr);
+        ierr = VecDestroy(iflow[i]); ERROR1(ierr);
+        ierr = VecDestroy(voltages[i]); ERROR1(ierr);
+    }
+    laplacians.clear();
+    iflow.clear();
+    voltages.clear();
+    
+    PetscInitialize(&argc,&argv,(char*)0,"PETSc");
+    PetscMPIInt size;
+
     ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);
     ERROR(ierr,"Could not retrieve MPI_Comm_size.");
     if (size != 1) {
@@ -26,7 +52,7 @@ SolvItPETSc::SolvItPETSc(ECircuit& ec, std::vector<std::pair<int,int> >& p,
     }
 
     
-    int n = ec.nbNodes();
+    int n = nbNodes();
     int dim = m == MULTI ? n-1 : (n-1) * p.size();
     Mat* lap1 = new Mat();
     Vec* iflow1 = new Vec();
@@ -83,9 +109,9 @@ SolvItPETSc::SolvItPETSc(ECircuit& ec, std::vector<std::pair<int,int> >& p,
             ierr = VecSetValue(*ifl,rshift+s-1,1,INSERT_VALUES);ERROR1(ierr);
         }
         
-        for (int e = 0; e < ec.nbEdges(); e++) {
-            int u = ec.getU(e);
-            int v = ec.getV(e);
+        for (int e = 0; e < nbEdges(); e++) {
+            int u = getU(e);
+            int v = getV(e);
             if (u == t || v == t) {
                 continue;
             }            
@@ -93,13 +119,11 @@ SolvItPETSc::SolvItPETSc(ECircuit& ec, std::vector<std::pair<int,int> >& p,
             if (v > t) v--;
             int row = rshift+u;
             int col = cshift+v;
-            double val = -ec.getCond(e);
+            double val = -getCond(e);
             ierr = MatSetValues(*lap,1,&row,1,&col,&val,INSERT_VALUES);ERROR1(ierr);
             row = rshift+v;
             col = cshift+u;
             ierr = MatSetValues(*lap,1,&row,1,&col,&val,INSERT_VALUES);ERROR1(ierr);
-            //mat[rshift+u][cshift+v] = mat[rshift+u][cshift+v]-ec.getCond(e);
-            //mat[rshift+v][cshift+u] = mat[rshift+v][cshift+u]-ec.getCond(e);
         }
         for (int j = 0; j < n; j++) {
             if (j == t) continue;
@@ -107,41 +131,29 @@ SolvItPETSc::SolvItPETSc(ECircuit& ec, std::vector<std::pair<int,int> >& p,
             if (j > t)
                 rj = j - 1;
             double s = 0;
-            for (int k = 0; k < ec.nbEdges(j); k++) {
-                ECircuit::EdgeID e = ec.getEdgeFrom(j,k);
-                s += ec.getCond(e);
+            for (int k = 0; k < nbEdges(j); k++) {
+                ECircuit::EdgeID e = getEdgeFrom(j,k);
+                s += getCond(e);
             }
             int row = rshift+rj;
             int col = cshift+rj;
             ierr = MatSetValues(*lap,1,&row,1,&col,&s,INSERT_VALUES);ERROR1(ierr);
-            //mat[rshift+rj][cshift+rj] = s;
         }
         ierr = MatAssemblyEnd(*lap1,MAT_FINAL_ASSEMBLY);ERROR1(ierr);
-        /*for (int row = 0; row < dim; row++) {
-            for (int col = 0; col < dim; col++) {
-                if (mat[row][col] != 0.0) {
-                    ierr = MatSetValues(*lap,1,&row,1,&col,&mat[row][col],
-                                        INSERT_VALUES);
-                    ERROR1(ierr);
-                }
-            }
-            }*/
-
         /*
         printf("LAP:\n");
         ierr = MatView(*lap,PETSC_VIEWER_STDOUT_WORLD); ERROR1(ierr);
         printf("FLOW:\n");
         ierr = VecView(*ifl,PETSC_VIEWER_STDOUT_WORLD); ERROR1(ierr);
-        */
+        //*/
 
     }
+    return true;
 }
 
-SolvItPETSc::~SolvItPETSc() {
+bool SolvItPETSc::updateConductances(std::vector<ECircuit::EdgeID> e,
+                                     std::vector<double> v) {
 
-}
-
-bool SolvItPETSc::updateConductance(ECircuit::EdgeID e, double v) {
     UNSUPPORTED;
     //TODO!!!
     //Example:
@@ -183,7 +195,7 @@ bool SolvItPETSc::solve() {
 
 //Voltages indexed by node ids
 bool SolvItPETSc::getVoltages(std::vector<double>& sol) {
-    sol = std::vector<double>(ec.nbNodes(),0);
+    sol = std::vector<double>(nbNodes(),0);
     PetscErrorCode ierr;
     for (uint i = 0; i < focals.size(); i++) {
         int s = focals[i].first;
@@ -192,7 +204,7 @@ bool SolvItPETSc::getVoltages(std::vector<double>& sol) {
             continue;
 
         Vec* vi = voltages[i];
-        for (int j = 0; j < ec.nbNodes(); j++) {
+        for (int j = 0; j < nbNodes(); j++) {
             if (j == t) continue;
             int idx = 0;
             if (j > t)
