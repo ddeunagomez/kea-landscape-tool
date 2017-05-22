@@ -24,7 +24,12 @@ SolvItPETSc::SolvItPETSc(std::vector<std::pair<int,int> >& p,
 }
 
 SolvItPETSc::~SolvItPETSc() {
-
+    PetscErrorCode ierr;
+    for (uint i = 0; i < laplacians.size(); i++){
+        ierr = MatDestroy(laplacians[i]); ERROR1(ierr);
+        ierr = VecDestroy(iflow[i]); ERROR1(ierr);
+        ierr = VecDestroy(voltages[i]); ERROR1(ierr);
+    }
 }
 
 bool SolvItPETSc::compile() {
