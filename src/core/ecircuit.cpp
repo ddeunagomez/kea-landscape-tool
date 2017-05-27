@@ -23,7 +23,6 @@ ECircuit::EdgeID ECircuit::addEdge(NodeID u, NodeID v, double cond) {
     node_edges[v].push_back(e);
     edges.push_back(std::make_pair(u,v));
 
-    conds_old.push_back(cond);
     conds.push_back(cond);
     
     return e;

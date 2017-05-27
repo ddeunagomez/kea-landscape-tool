@@ -36,6 +36,9 @@ public:
 
     //Voltages indexed by node ids
     virtual bool getVoltages(std::vector<double>& sol) = 0;
+    //Currents by node and by edge
+    virtual bool getCurrents(std::vector<double>& c_n,
+                             std::vector<double>& c_e) = 0;
 
 };
 

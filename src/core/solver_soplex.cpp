@@ -138,4 +138,10 @@ bool SolvSoplex::getVoltages(std::vector<double>& sol) {
     return true;
 }
 
+bool SolvSoplex::getCurrents(std::vector<double>& c_n,
+                             std::vector<double>& c_e) {
+    UNSUPPORTED;
+    return true;
+}
+
 #endif /*SOLVER_USE_SOPLEX */

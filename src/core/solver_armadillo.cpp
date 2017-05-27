@@ -124,4 +124,10 @@ bool SolvArmadillo::getVoltages(std::vector<double>& sol) {
     return true;
 }
 
+bool SolvArmadillo::getCurrents(std::vector<double>& c_n,
+                                std::vector<double>& c_e) {
+    UNSUPPORTED;
+    return true;
+}
+
 #endif /*SOLVER_USE_ARMADILLO */

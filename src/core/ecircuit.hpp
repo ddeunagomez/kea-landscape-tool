@@ -13,7 +13,6 @@ public:
 
 private:
     std::vector<Edge> edges;
-    std::vector<double> conds_old;
     std::vector<double> conds;
     std::vector< std::vector<EdgeID> > node_edges;
     
@@ -49,13 +48,9 @@ public:
         assert(e < conds.size());
         return conds[e];
     }
-    inline double getOldCond(EdgeID e) {
-        assert(e < conds.size());
-        return conds_old[e];
-    }
+
     inline void updateCond(EdgeID e, double c) {
         assert(e < conds.size());
-        conds_old[e] = conds[e];
         conds[e] = c;
     }
 

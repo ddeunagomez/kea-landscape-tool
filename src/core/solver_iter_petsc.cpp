@@ -24,7 +24,6 @@ SolvItPETSc::SolvItPETSc(std::vector<std::pair<int,int> >& p,
 }
 
 SolvItPETSc::~SolvItPETSc() {
-    PetscErrorCode ierr;
     for (uint i = 0; i < laplacians.size(); i++){
         ierr = MatDestroy(laplacians[i]); ERROR1(ierr);
         ierr = VecDestroy(iflow[i]); ERROR1(ierr);
@@ -35,7 +34,6 @@ SolvItPETSc::~SolvItPETSc() {
 bool SolvItPETSc::compile() {
     if(!Solver::compile()) return false;
     std::vector<std::pair<int,int> >& p = focals;
-    PetscErrorCode ierr;
     for (uint i = 0; i < laplacians.size(); i++){
         ierr = MatDestroy(laplacians[i]); ERROR1(ierr);
         ierr = VecDestroy(iflow[i]); ERROR1(ierr);
@@ -44,6 +42,7 @@ bool SolvItPETSc::compile() {
     laplacians.clear();
     iflow.clear();
     voltages.clear();
+    e2m = std::vector< std::vector<edge_pos> >(nbEdges());
     
     PetscInitialize(&argc,&argv,(char*)0,"PETSc");
     PetscMPIInt size;
@@ -126,9 +125,11 @@ bool SolvItPETSc::compile() {
             int col = cshift+v;
             double val = -getCond(e);
             ierr = MatSetValues(*lap,1,&row,1,&col,&val,INSERT_VALUES);ERROR1(ierr);
+            e2m[e].push_back({i,row, col});
             row = rshift+v;
             col = cshift+u;
             ierr = MatSetValues(*lap,1,&row,1,&col,&val,INSERT_VALUES);ERROR1(ierr);
+            e2m[e].push_back({i,row, col});
         }
         for (int j = 0; j < n; j++) {
             if (j == t) continue;
@@ -136,12 +137,13 @@ bool SolvItPETSc::compile() {
             if (j > t)
                 rj = j - 1;
             double s = 0;
+            int row = rshift+rj;
+            int col = cshift+rj;
             for (int k = 0; k < nbEdges(j); k++) {
                 ECircuit::EdgeID e = getEdgeFrom(j,k);
                 s += getCond(e);
+                e2m[e].push_back({i,row, col});
             }
-            int row = rshift+rj;
-            int col = cshift+rj;
             ierr = MatSetValues(*lap,1,&row,1,&col,&s,INSERT_VALUES);ERROR1(ierr);
         }
         ierr = MatAssemblyEnd(*lap1,MAT_FINAL_ASSEMBLY);ERROR1(ierr);
@@ -151,34 +153,47 @@ bool SolvItPETSc::compile() {
         printf("FLOW:\n");
         ierr = VecView(*ifl,PETSC_VIEWER_STDOUT_WORLD); ERROR1(ierr);
         //*/
-
     }
     return true;
 }
 
-bool SolvItPETSc::updateConductances(std::vector<ECircuit::EdgeID> e,
-                                     std::vector<double> v) {
+bool SolvItPETSc::updateConductances(std::vector<ECircuit::EdgeID> edges,
+                                     std::vector<double> vals) {
 
-    UNSUPPORTED;
-    //TODO!!!
-    //Example:
-    /*int rows = {0};
-    int cols = {0};
-    double vals;
-    ierr = MatGetValues(*lap,1,&rows,1,&cols,&vals);
-    ierr = MatAssemblyBegin(*lap,MAT_FINAL_ASSEMBLY);ERROR1(ierr);
-    ierr = MatSetValues(*lap,1,&rows,1,&cols,&vals,
-                        INSERT_VALUES);
-    ERROR1(ierr);
-    ierr = MatAssemblyEnd(*lap,MAT_FINAL_ASSEMBLY);ERROR1(ierr);
-    //*/
+    for (uint i = 0; i < laplacians.size(); i++) {
+        ierr = MatAssemblyBegin(*(laplacians[i]),MAT_FINAL_ASSEMBLY);ERROR1(ierr);
+    }
+    
+    for (uint i = 0; i < edges.size(); i++) {
+        int e = edges[i];
+        int c = vals[i];
+        for (uint j = 0; j < e2m[e].size(); j++) {
+            edge_pos data = e2m[e][j];
+            //Erase old cond and add new one.
+            //For diag: -old + new
+            double val = -getCond(e) + c;
+            if (data.row != data.col) {
+                //Offdiag : +old - new
+                val = +getCond(e) - c;
+            }
+            ierr = MatSetValues(*(laplacians[data.mid]),1,
+                                &data.row,1,&data.col,&val,ADD_VALUES);
+            ERROR1(ierr);
+        }
+        updateCond(e,c);
+    }
+    
+
+    for (uint i = 0; i < laplacians.size(); i++) {
+        ierr = MatAssemblyEnd(*(laplacians[i]),MAT_FINAL_ASSEMBLY);ERROR1(ierr);
+    }
+    
     return true;
 }
 bool SolvItPETSc::solve() {
     for (uint i = 0; i < laplacians.size(); i++) {
         KSP ksp;         /* linear solver context */
         PC  pc;          /* preconditioner context */
-        PetscErrorCode ierr;
         Mat* lap = laplacians[i];
         ierr = KSPCreate(PETSC_COMM_WORLD,&ksp);ERROR1(ierr);        
         ierr = KSPSetOperators(ksp,*lap,*lap);ERROR1(ierr);
@@ -192,7 +207,6 @@ bool SolvItPETSc::solve() {
         ierr = VecSet(*voltages[i],p);CHKERRQ(ierr);
         ierr = KSPSetInitialGuessNonzero(ksp,PETSC_TRUE);CHKERRQ(ierr);
         ierr = KSPSolve(ksp,*iflow[i],*voltages[i]);ERROR1(ierr);
-        ierr = VecView(*voltages[i],PETSC_VIEWER_STDOUT_WORLD); ERROR1(ierr);
     }
     return true;
 }
@@ -201,7 +215,6 @@ bool SolvItPETSc::solve() {
 //Voltages indexed by node ids
 bool SolvItPETSc::getVoltages(std::vector<double>& sol) {
     sol = std::vector<double>(nbNodes(),0);
-    PetscErrorCode ierr;
     for (uint i = 0; i < focals.size(); i++) {
         int s = focals[i].first;
         int t = focals[i].second;
@@ -221,6 +234,26 @@ bool SolvItPETSc::getVoltages(std::vector<double>& sol) {
             sol[j] += tmp; 
         }
         
+    }
+    
+    return true;
+}
+
+bool SolvItPETSc::getCurrents(std::vector<double>& c_n,
+                              std::vector<double>& c_e) {
+
+    std::vector<double> vs;
+    if(!getVoltages(vs))
+        return false;
+    c_n = std::vector<double>(nbNodes(),0);
+    c_e = std::vector<double>(nbEdges(),0);
+    
+    for (uint e = 0; e < nbEdges(); e++) {
+        int u = getU(e);
+        int v = getV(e);
+        c_e[e] = fabs(vs[u] - vs[v])/getCond(e);
+        c_n[u] += c_e[e]/2.0;
+        c_n[v] += c_e[e]/2.0;
     }
     
     return true;

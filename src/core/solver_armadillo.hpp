@@ -33,6 +33,8 @@ public:
     bool solve();
 
     bool getVoltages(std::vector<double>& sol);
+    bool getCurrents(std::vector<double>& c_n,
+                     std::vector<double>& c_e);
 };
 
 #endif /*SOLVER_USE_ARMADILLO */
