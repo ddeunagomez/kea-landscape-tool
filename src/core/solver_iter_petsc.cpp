@@ -39,8 +39,6 @@ SolvItPETSc::~SolvItPETSc() {
 bool SolvItPETSc::compile() {
     if(!Solver::compile()) return false;
 
-    if (m == MULTI)
-        throw std::runtime_error("Cannot retrieve voltages for MULTI in PETSc yet.");
     
     std::vector<std::pair<int,int> >& p = focals;
     for (uint i = 0; i < laplacians.size(); i++){
@@ -136,12 +134,10 @@ bool SolvItPETSc::compile() {
             double val = -getCond(e);
             ierr = MatSetValues(*lap,1,&row,1,&col,&val,INSERT_VALUES);ERROR1(ierr);
             e2m[e].push_back({matrix_id,row, col});
-            assert(matrix_id == 0);
             row = rshift+v;
             col = cshift+u;
             ierr = MatSetValues(*lap,1,&row,1,&col,&val,INSERT_VALUES);ERROR1(ierr);
             e2m[e].push_back({matrix_id,row, col});
-            assert(matrix_id == 0);
         }
         for (int j = 0; j < n; j++) {
             if (j == t) continue;
@@ -155,11 +151,10 @@ bool SolvItPETSc::compile() {
                 ECircuit::EdgeID e = getEdgeFrom(j,k);
                 s += getCond(e);
                 e2m[e].push_back({matrix_id,row, col});
-                assert(matrix_id == 0);
             }
             ierr = MatSetValues(*lap,1,&row,1,&col,&s,INSERT_VALUES);ERROR1(ierr);
         }
-        ierr = MatAssemblyEnd(*lap1,MAT_FINAL_ASSEMBLY);ERROR1(ierr);
+        ierr = MatAssemblyEnd(*lap,MAT_FINAL_ASSEMBLY);ERROR1(ierr);
         /*
         printf("LAP:\n");
         ierr = MatView(*lap,PETSC_VIEWER_STDOUT_WORLD); ERROR1(ierr);

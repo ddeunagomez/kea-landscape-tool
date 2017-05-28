@@ -21,7 +21,7 @@ int main(int argc, char* argv[]) {
     
     //SolvSoplex ss(p,SolvSoplex::UNIQUE);
     //SolvArmadillo ss(p,SolvSoplex::UNIQUE);
-    SolvItPETSc ss(p,&argc,&argv,Solver::UNIQUE);
+    SolvItPETSc ss(p,&argc,&argv,Solver::MULTI);
     ss.parseTextListFile(std::string(argv[1]));
     std::cout<<"Loaded file"<<std::endl;
     ss.printECircuit();
