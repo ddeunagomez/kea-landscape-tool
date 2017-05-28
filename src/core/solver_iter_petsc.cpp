@@ -18,14 +18,14 @@
 
 SolvItPETSc::SolvItPETSc(std::vector<std::pair<int,int> >& p,
                          int* _argc, char*** _argv,
-                             Mode m) : Solver(p) {
-
+                         Mode m) : Solver(p), m(m) {
     argc = *_argc;
     argv = new char*[argc];
     for (int i = 0; i < argc; i++) {
         argv[i] = new char[strlen((*_argv)[i])];
         memcpy(argv[i],(*_argv)[i],strlen((*_argv)[i])*sizeof(char));
     }
+
 }
 
 SolvItPETSc::~SolvItPETSc() {
@@ -38,6 +38,10 @@ SolvItPETSc::~SolvItPETSc() {
 
 bool SolvItPETSc::compile() {
     if(!Solver::compile()) return false;
+
+    if (m == MULTI)
+        throw std::runtime_error("Cannot retrieve voltages for MULTI in PETSc yet.");
+    
     std::vector<std::pair<int,int> >& p = focals;
     for (uint i = 0; i < laplacians.size(); i++){
         ierr = MatDestroy(laplacians[i]); ERROR1(ierr);
@@ -82,6 +86,7 @@ bool SolvItPETSc::compile() {
     for (uint i = 0; i < p.size(); i++) {
         int s = p[i].first;
         int t = p[i].second;
+        int matrix_id = i;
         if (s == t)
             continue;
         if (i > 0 && m == MULTI) {
@@ -104,6 +109,8 @@ bool SolvItPETSc::compile() {
             iflow.push_back(iflow1);
             voltages.push_back(volt1);            
         }
+        if (m == UNIQUE)
+            matrix_id = 0;
         Mat* lap = laplacians.back();
         ierr = MatAssemblyBegin(*lap,MAT_FINAL_ASSEMBLY);ERROR1(ierr);
         Vec* ifl = iflow.back();
@@ -128,11 +135,13 @@ bool SolvItPETSc::compile() {
             int col = cshift+v;
             double val = -getCond(e);
             ierr = MatSetValues(*lap,1,&row,1,&col,&val,INSERT_VALUES);ERROR1(ierr);
-            e2m[e].push_back({i,row, col});
+            e2m[e].push_back({matrix_id,row, col});
+            assert(matrix_id == 0);
             row = rshift+v;
             col = cshift+u;
             ierr = MatSetValues(*lap,1,&row,1,&col,&val,INSERT_VALUES);ERROR1(ierr);
-            e2m[e].push_back({i,row, col});
+            e2m[e].push_back({matrix_id,row, col});
+            assert(matrix_id == 0);
         }
         for (int j = 0; j < n; j++) {
             if (j == t) continue;
@@ -145,7 +154,8 @@ bool SolvItPETSc::compile() {
             for (int k = 0; k < nbEdges(j); k++) {
                 ECircuit::EdgeID e = getEdgeFrom(j,k);
                 s += getCond(e);
-                e2m[e].push_back({i,row, col});
+                e2m[e].push_back({matrix_id,row, col});
+                assert(matrix_id == 0);
             }
             ierr = MatSetValues(*lap,1,&row,1,&col,&s,INSERT_VALUES);ERROR1(ierr);
         }
@@ -215,26 +225,38 @@ bool SolvItPETSc::solve() {
 
 
 //Voltages indexed by node ids
-void SolvItPETSc::getVoltages(std::vector<id_val>& sol) {
-    sol = std::vector<id_val>(nbNodes());
+void SolvItPETSc::getVoltages(std::vector< std::vector<id_val> >& each,
+                              std::vector<id_val>& all) {
+    all = std::vector<id_val>(nbNodes());
+    each = std::vector< std::vector<id_val> >(focals.size(),
+                                              std::vector<id_val>(nbNodes()));
+
     for (uint i = 0; i < focals.size(); i++) {
         int s = focals[i].first;
         int t = focals[i].second;
         if (s == t)
             continue;
 
-        Vec* vi = voltages[i];
+        Vec* vi = NULL;
+        if (m == MULTI)
+            vi = voltages[i];
+        else
+            vi = voltages[0];
         for (int j = 0; j < nbNodes(); j++) {
-            sol[j].id = j;
+            all[j].id = j;
+            each[i][j].id = j;
             if (j == t) continue;
             int idx = 0;
             if (j > t)
                 idx = j - 1;
             else
                 idx = j;
+            if (m == UNIQUE)
+                idx += (nbNodes() - 1)*i;
             double tmp;
             ierr = VecGetValues(*vi,1,&idx,&tmp);ERROR1(ierr);
-            sol[j].val += tmp; 
+            all[j].val += tmp;
+            each[i][j].val += tmp;
         }
         
     }
@@ -245,7 +267,8 @@ void SolvItPETSc::getCurrents(std::vector<id_val>& c_n,
                               std::vector<id_val>& c_e) {
 
     std::vector<id_val> vs;
-    getVoltages(vs);
+    std::vector< std::vector<id_val> > dummy;
+    getVoltages(dummy, vs);
     c_n = std::vector<id_val>(nbNodes());
     c_e = std::vector<id_val>(nbEdges());
     

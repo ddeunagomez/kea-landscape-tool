@@ -98,10 +98,12 @@ bool SolvSoplex::solve() {
     return true;
 }
 
-void SolvSoplex::getVoltages(std::vector<id_val>& sol) {
+void SolvSoplex::getVoltages(std::vector< std::vector<id_val> >& each,
+                             std::vector<id_val>& all) {
 
-    sol.clear();
-    sol = std::vector<id_val>(nbNodes());
+    all = std::vector<id_val>(nbNodes());
+    each = std::vector< std::vector<id_val> >(focals.size(),
+                               std::vector<id_val>(nbNodes()));
     if (m == MULTI) {
         for (uint i = 0; i < solvers.size(); i++) {
             SoPlex& s = solvers[i];
@@ -113,8 +115,10 @@ void SolvSoplex::getVoltages(std::vector<id_val>& sol) {
             }
             assert(nbNodes() == s.numColsReal());
             for (int j = 0; j < nbNodes(); j++) {
-                sol[j].id = j;
-                sol[j].val += primal[j];
+                all[j].id = j;
+                all[j].val += primal[j];
+                each[i][j].id = j;
+                each[i][j].val += primal[j];
             }
 
         }
@@ -125,8 +129,10 @@ void SolvSoplex::getVoltages(std::vector<id_val>& sol) {
             throw std::runtime_error("SoPlex: Error obtaining primal solution.");
         }
         for (int j = 0; j < s.numColsReal(); j++) {
-            sol[j%nbNodes()].id = j%nbNodes();
-            sol[j%nbNodes()].val += primal[j];
+            all[j%nbNodes()].id = j%nbNodes();
+            all[j%nbNodes()].val += primal[j];
+            each[j/nbNodes()][j].id = j;
+            each[j/nbNodes()][j].val += primal[j];
         }
         
     }

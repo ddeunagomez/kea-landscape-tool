@@ -46,7 +46,8 @@ public:
     };
 
     //Voltages indexed by node ids
-    virtual void getVoltages(std::vector<id_val>& sol) {
+    virtual void getVoltages(std::vector< std::vector<id_val> >& each,
+                             std::vector<id_val>& all) {
         throw unimplemented_solver("getVoltages");
     };
     //Currents by node and by edge

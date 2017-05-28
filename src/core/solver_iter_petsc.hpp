@@ -35,7 +35,7 @@ private:
 public:
 
     SolvItPETSc(std::vector<std::pair<int,int> >& p,
-                int* argc, char*** argv, Mode m = MULTI);
+                int* argc, char*** argv, Mode m = Solver::MULTI);
     ~SolvItPETSc();
 
     bool compile();
@@ -44,7 +44,8 @@ public:
                             std::vector<double> v);
     bool solve();
 
-    void getVoltages(std::vector<id_val>& sol);
+    void getVoltages(std::vector< std::vector<id_val> >& each,
+                     std::vector<id_val>& all);
     void getCurrents(std::vector<id_val>& c_n,
                      std::vector<id_val>& c_e);
 };

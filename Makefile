@@ -16,7 +16,7 @@ PETSCPATH = -L/home/diego/lib/petsc-3.7.6/arch-linux2-c-debug/lib \
 
 
 CC = g++
-CPPFLAGS = -g -std=c++0x -O3 
+CPPFLAGS = -g -std=c++0x -O0
 #CPPFLAGS += -DNDEBUG
 CPPFLAGS += -pg -ggdb
 CPPFLAGS += -Wall -Werror=return-type

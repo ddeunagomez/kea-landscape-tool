@@ -31,7 +31,8 @@ public:
     bool compile();
     
     bool solve();
-    void getVoltages(std::vector<id_val>& sol);
+    void getVoltages(std::vector< std::vector<id_val> >& each,
+                     std::vector<id_val>& all);
 };
 
 #endif /*SOLVER_USE_SOPLEX */

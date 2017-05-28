@@ -6,6 +6,8 @@
 #include "solver_soplex.hpp"
 #include "solver_armadillo.hpp"
 #include "solver_iter_petsc.hpp"
+#include "local_search_engine.hpp"
+#include "pricing_manager.hpp"
 
 int main(int argc, char* argv[]) {
 
@@ -14,25 +16,28 @@ int main(int argc, char* argv[]) {
 
     std::vector<std::pair<int,int> > p;
     p.push_back(std::make_pair(0,4));
-    //p.push_back(std::make_pair(101,888));
+    p.push_back(std::make_pair(2,3));
 
     
     //SolvSoplex ss(p,SolvSoplex::UNIQUE);
     //SolvArmadillo ss(p,SolvSoplex::UNIQUE);
-    SolvItPETSc ss(p,&argc,&argv,SolvSoplex::UNIQUE);
+    SolvItPETSc ss(p,&argc,&argv,Solver::UNIQUE);
     ss.parseTextListFile(std::string(argv[1]));
     std::cout<<"Loaded file"<<std::endl;
     ss.printECircuit();
-    ss.compile();
+    PricingManager pm(3);
+    LocalSearchEngine ls(p,&ss,&pm);
     std::cout<<"Created model"<<std::endl;
-    ss.solve();
-    std::cout<<"Solved model"<<std::endl;
+    double bsol = ls.baseSolution();
+    std::cout<<"Solved model. R = "<<bsol<<std::endl;
 
     std::vector<id_val> vs;
-    ss.getVoltages(vs);
+    std::vector<std::vector<id_val> > vss;
+    ss.getVoltages(vss,vs);
 
-    for (uint i = 0; i < vs.size(); i++)
-        std::cout<<"v("<<vs[i].id<<") = "<<vs[i].val<<std::endl;
+    for (uint i = 0; i < vss.size(); i++)
+        for (uint j = 0; j < vss[i].size(); j++)
+            std::cout<<"v("<<vss[i][j].id<<") = "<<vss[i][j].val<<std::endl;
 
     std::vector<uint> upe;
     upe.push_back(2);
@@ -40,13 +45,15 @@ int main(int argc, char* argv[]) {
     upv.push_back(20);
     ss.updateConductances(upe,upv);
 
-    ss.solve();
-    std::cout<<"Solved model"<<std::endl;
+    bsol = ls.baseSolution();
+    std::cout<<"Solved model. R = "<<bsol<<std::endl;
 
-    ss.getVoltages(vs);
+    ss.getVoltages(vss,vs);
 
-    for (uint i = 0; i < vs.size(); i++)
-        std::cout<<"v("<<vs[i].id<<") = "<<vs[i].val<<std::endl;
+
+    for (uint i = 0; i < vss.size(); i++)
+        for (uint j = 0; j < vss[i].size(); j++)
+            std::cout<<"v("<<vss[i][j].id<<") = "<<vss[i][j].val<<std::endl;
 
     std::vector<id_val> x;
     std::vector<id_val> y;

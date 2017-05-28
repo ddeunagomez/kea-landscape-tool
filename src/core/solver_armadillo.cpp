@@ -7,7 +7,7 @@
 using namespace arma;
 
 SolvArmadillo::SolvArmadillo(std::vector<std::pair<int,int> >& p,
-                             Mode m) : Solver(p) {
+                             Mode m) : Solver(p), m(m) {
 
    
 }
@@ -18,6 +18,10 @@ SolvArmadillo::~SolvArmadillo() {
 
 bool SolvArmadillo::compile() {
     if(!Solver::compile()) return false;
+
+    if (m == MULTI)
+        throw std::runtime_error("Cannot retrieve voltages for MULTI in Armadillo yet.");
+    
     std::vector<std::pair<int,int> >& p = focals;
     laplacians.clear();
     iflow.clear();
@@ -97,23 +101,33 @@ bool SolvArmadillo::solve() {
 
 
 //Voltages indexed by node ids
-void SolvArmadillo::getVoltages(std::vector<id_val>& sol) {
-    sol = std::vector<id_val>(nbNodes());
+void SolvArmadillo::getVoltages(std::vector< std::vector<id_val> >& each,
+                                std::vector<id_val>& all) {
+    all = std::vector<id_val>(nbNodes());
+    each = std::vector< std::vector<id_val> >(focals.size(),
+                               std::vector<id_val>(nbNodes()));
 
     for (uint i = 0; i < focals.size(); i++) {
         int s = focals[i].first;
         int t = focals[i].second;
         if (s == t)
             continue;
-
-        vec& vi = voltages[i];
+        vec& vi = voltages[0];
+        if (m == MULTI)
+            vi = voltages[i];
         for (int j = 0; j < nbNodes(); j++) {
-            sol[j].id = j;
+            all[j].id = j;
+            each[i][j].id = j;
             if (j == t) continue;
+            int idx = 0;
             if (j > t)
-                sol[j].val += vi[j - 1];
-            else
-                sol[j].val += vi[j];
+                idx = j - 1;
+            else 
+                idx = j;
+            if (m == UNIQUE)
+                idx += (nbNodes() - 1)*i;
+            all[j].val += vi[idx];
+            each[i][j].val += vi[idx];
         }
         
     }
