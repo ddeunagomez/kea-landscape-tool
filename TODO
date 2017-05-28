@@ -8,4 +8,6 @@ So that I can easily cumulte the edges without having to read the value
 in the matrix when building the linear systems.
 
 
-2 Create exception classes and use them to report errors.
+2 Change getVoltage to return the voltages for each pair of focals
+instead of cumulating them
+

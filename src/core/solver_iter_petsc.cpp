@@ -5,11 +5,16 @@
 #include <math.h>
 #include <string>
 
-#define ERROR(c,str) do { if (c) {                                  \
-        std::cerr<<str<<" "<<__FILE__<<":"<<__LINE__<<std::endl;   \
-        exit(1);                                                \
+#define ERROR(c,str) do { if (c) {                                      \
+            std::cerr<<str<<" "<<__FILE__<<":"<<__LINE__<<std::endl;    \
+            std::string err = str;                                      \
+            err += " ";                                                 \
+            err += __FILE__;                                            \
+            err += ":";                                                 \
+            err += __LINE__;                                            \
+            throw std::runtime_error(err);                              \
         } } while(0)
-#define ERROR1(c) ERROR(c,"Error: ")
+#define ERROR1(c) ERROR(c,"PETSc error: ")
 
 SolvItPETSc::SolvItPETSc(std::vector<std::pair<int,int> >& p,
                          int* _argc, char*** _argv,
@@ -50,9 +55,7 @@ bool SolvItPETSc::compile() {
     ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size);
     ERROR(ierr,"Could not retrieve MPI_Comm_size.");
     if (size != 1) {
-        
-        std::cerr<<"This is a uniprocessor code only!"<<std::endl;
-        exit(1);
+        ERROR(1,"This is a uniprocessor code only!");
     }
 
     
@@ -157,7 +160,7 @@ bool SolvItPETSc::compile() {
     return true;
 }
 
-bool SolvItPETSc::updateConductances(std::vector<ECircuit::EdgeID> edges,
+void SolvItPETSc::updateConductances(std::vector<ECircuit::EdgeID> edges,
                                      std::vector<double> vals) {
 
     for (uint i = 0; i < laplacians.size(); i++) {
@@ -188,7 +191,6 @@ bool SolvItPETSc::updateConductances(std::vector<ECircuit::EdgeID> edges,
         ierr = MatAssemblyEnd(*(laplacians[i]),MAT_FINAL_ASSEMBLY);ERROR1(ierr);
     }
     
-    return true;
 }
 bool SolvItPETSc::solve() {
     for (uint i = 0; i < laplacians.size(); i++) {
@@ -213,8 +215,8 @@ bool SolvItPETSc::solve() {
 
 
 //Voltages indexed by node ids
-bool SolvItPETSc::getVoltages(std::vector<double>& sol) {
-    sol = std::vector<double>(nbNodes(),0);
+void SolvItPETSc::getVoltages(std::vector<id_val>& sol) {
+    sol = std::vector<id_val>(nbNodes());
     for (uint i = 0; i < focals.size(); i++) {
         int s = focals[i].first;
         int t = focals[i].second;
@@ -223,6 +225,7 @@ bool SolvItPETSc::getVoltages(std::vector<double>& sol) {
 
         Vec* vi = voltages[i];
         for (int j = 0; j < nbNodes(); j++) {
+            sol[j].id = j;
             if (j == t) continue;
             int idx = 0;
             if (j > t)
@@ -231,32 +234,32 @@ bool SolvItPETSc::getVoltages(std::vector<double>& sol) {
                 idx = j;
             double tmp;
             ierr = VecGetValues(*vi,1,&idx,&tmp);ERROR1(ierr);
-            sol[j] += tmp; 
+            sol[j].val += tmp; 
         }
         
     }
     
-    return true;
 }
 
-bool SolvItPETSc::getCurrents(std::vector<double>& c_n,
-                              std::vector<double>& c_e) {
+void SolvItPETSc::getCurrents(std::vector<id_val>& c_n,
+                              std::vector<id_val>& c_e) {
 
-    std::vector<double> vs;
-    if(!getVoltages(vs))
-        return false;
-    c_n = std::vector<double>(nbNodes(),0);
-    c_e = std::vector<double>(nbEdges(),0);
+    std::vector<id_val> vs;
+    getVoltages(vs);
+    c_n = std::vector<id_val>(nbNodes());
+    c_e = std::vector<id_val>(nbEdges());
     
-    for (uint e = 0; e < nbEdges(); e++) {
+    for (int e = 0; e < nbEdges(); e++) {
         int u = getU(e);
         int v = getV(e);
-        c_e[e] = fabs(vs[u] - vs[v])/getCond(e);
-        c_n[u] += c_e[e]/2.0;
-        c_n[v] += c_e[e]/2.0;
+        c_e[e].id = e;
+        c_e[e].val = fabs(vs[u].val - vs[v].val)/getCond(e);
+        c_n[u].id = u;
+        c_n[u].val += c_e[e].val/2.0;
+        c_n[v].id = v;
+        c_n[v].val += c_e[e].val/2.0;
     }
     
-    return true;
 }
 
 #endif /*SOLVER_USE_PETSC */

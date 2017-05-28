@@ -3,6 +3,7 @@
 
 #include "ecircuit.hpp"
 #include <vector>
+#include "utils.hpp"
 
 /*
  * Wrapper around whatever solver I am using. 
@@ -26,19 +27,34 @@ public:
         for (uint i = 0; i < focals.size(); i++)
             if (focals[i].first < 0 || focals[i].first >= nbNodes() ||
                 focals[i].second < 0 || focals[i].second >= nbNodes())
-                return false;
-        return nbNodes() > 1 && focals.size() > 0;
+                throw std::runtime_error("Invalid values for focal "
+                                         +std::to_string(i)+"\n");
+        if (nbNodes() <= 1)
+            throw std::runtime_error("Invalid network: too few nodes\n");
+        if (focals.size() == 0)
+            throw std::runtime_error("No focal specicified\n");
+        return true;
     }
     
-    virtual bool updateConductances(std::vector<ECircuit::EdgeID> e,
-                                    std::vector<double> v) = 0;
-    virtual bool solve() = 0;
+    virtual void updateConductances(std::vector<ECircuit::EdgeID> e,
+                                    std::vector<double> v) {
+        throw unimplemented_solver("updateConductances");
+    }
+    
+    virtual bool solve() {
+        throw unimplemented_solver("solve");
+    };
 
     //Voltages indexed by node ids
-    virtual bool getVoltages(std::vector<double>& sol) = 0;
+    virtual void getVoltages(std::vector<id_val>& sol) {
+        throw unimplemented_solver("getVoltages");
+    };
     //Currents by node and by edge
-    virtual bool getCurrents(std::vector<double>& c_n,
-                             std::vector<double>& c_e) = 0;
+    virtual void getCurrents(std::vector<id_val>& c_n,
+                             std::vector<id_val>& c_e) {
+
+        throw unimplemented_solver("getCurrents");
+    }
 
 };
 

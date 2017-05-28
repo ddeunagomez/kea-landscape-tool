@@ -87,11 +87,7 @@ bool SolvArmadillo::compile() {
     return true;
 }
 
-bool SolvArmadillo::updateConductances(std::vector<ECircuit::EdgeID> e,
-                                     std::vector<double> v) {
-    UNSUPPORTED;
-    return true;
-}
+
 bool SolvArmadillo::solve() {
     for (uint i = 0; i < laplacians.size(); i++) {
         voltages[i] = spsolve(laplacians[i],iflow[i],"lapack");
@@ -101,8 +97,8 @@ bool SolvArmadillo::solve() {
 
 
 //Voltages indexed by node ids
-bool SolvArmadillo::getVoltages(std::vector<double>& sol) {
-    sol = std::vector<double>(nbNodes(),0);
+void SolvArmadillo::getVoltages(std::vector<id_val>& sol) {
+    sol = std::vector<id_val>(nbNodes());
 
     for (uint i = 0; i < focals.size(); i++) {
         int s = focals[i].first;
@@ -112,22 +108,18 @@ bool SolvArmadillo::getVoltages(std::vector<double>& sol) {
 
         vec& vi = voltages[i];
         for (int j = 0; j < nbNodes(); j++) {
+            sol[j].id = j;
             if (j == t) continue;
             if (j > t)
-                sol[j] += vi[j - 1];
+                sol[j].val += vi[j - 1];
             else
-                sol[j] += vi[j];
+                sol[j].val += vi[j];
         }
         
     }
     
-    return true;
 }
 
-bool SolvArmadillo::getCurrents(std::vector<double>& c_n,
-                                std::vector<double>& c_e) {
-    UNSUPPORTED;
-    return true;
-}
+
 
 #endif /*SOLVER_USE_ARMADILLO */

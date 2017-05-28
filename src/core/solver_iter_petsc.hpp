@@ -40,13 +40,13 @@ public:
 
     bool compile();
     
-    bool updateConductances(std::vector<ECircuit::EdgeID> e,
+    void updateConductances(std::vector<ECircuit::EdgeID> e,
                             std::vector<double> v);
     bool solve();
 
-    bool getVoltages(std::vector<double>& sol);
-    bool getCurrents(std::vector<double>& c_n,
-                     std::vector<double>& c_e);
+    void getVoltages(std::vector<id_val>& sol);
+    void getCurrents(std::vector<id_val>& c_n,
+                     std::vector<id_val>& c_e);
 };
 
 #endif /*SOLVER_USE_PETSC */

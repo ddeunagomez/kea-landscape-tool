@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 
+#include "utils.hpp"
 #include "ecircuit.hpp"
 #include "solver_soplex.hpp"
 #include "solver_armadillo.hpp"
@@ -27,11 +28,11 @@ int main(int argc, char* argv[]) {
     ss.solve();
     std::cout<<"Solved model"<<std::endl;
 
-    std::vector<double> vs;
+    std::vector<id_val> vs;
     ss.getVoltages(vs);
 
     for (uint i = 0; i < vs.size(); i++)
-        std::cout<<"v("<<i<<") = "<<vs[i]<<std::endl;
+        std::cout<<"v("<<vs[i].id<<") = "<<vs[i].val<<std::endl;
 
     std::vector<uint> upe;
     upe.push_back(2);
@@ -45,6 +46,17 @@ int main(int argc, char* argv[]) {
     ss.getVoltages(vs);
 
     for (uint i = 0; i < vs.size(); i++)
-        std::cout<<"v("<<i<<") = "<<vs[i]<<std::endl;
+        std::cout<<"v("<<vs[i].id<<") = "<<vs[i].val<<std::endl;
+
+    std::vector<id_val> x;
+    std::vector<id_val> y;
+    ss.getCurrents(x,y);
+
+    for (uint i = 0; i < x.size(); i++)
+        std::cout<<"c_n("<<x[i].id<<") = "<<x[i].val<<std::endl;
+
+    std::sort(y.begin(), y.end(), id_val::sort_by_val);
+    for (uint i = 0; i < y.size(); i++)
+        std::cout<<"c_e("<<y[i].id<<") = "<<y[i].val<<std::endl;
     
 }

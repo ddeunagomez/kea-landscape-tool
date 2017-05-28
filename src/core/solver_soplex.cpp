@@ -84,11 +84,6 @@ bool SolvSoplex::compile() {
     return true;
 }
 
-bool SolvSoplex::updateConductances(std::vector<ECircuit::EdgeID> e,
-                                     std::vector<double> v) {
-    UNSUPPORTED;
-    return true;
-}
 
 bool SolvSoplex::solve() {
 
@@ -103,22 +98,23 @@ bool SolvSoplex::solve() {
     return true;
 }
 
-bool SolvSoplex::getVoltages(std::vector<double>& sol) {
+void SolvSoplex::getVoltages(std::vector<id_val>& sol) {
 
     sol.clear();
-    sol = std::vector<double>(nbNodes(),0);
+    sol = std::vector<id_val>(nbNodes());
     if (m == MULTI) {
         for (uint i = 0; i < solvers.size(); i++) {
             SoPlex& s = solvers[i];
             DVector primal(s.numColsReal());
             if(!s.getPrimalReal(primal) ) {
-                std::cerr<<"Error obtaining primal solution for solver "
-                         <<i<<"."<<std::endl;
-                return false;
+                throw std::runtime_error("SoPlex: Error obtaining primal "
+                                         "solution for solver "
+                                         +std::to_string(i));
             }
             assert(nbNodes() == s.numColsReal());
             for (int j = 0; j < nbNodes(); j++) {
-                sol[j] += primal[j];
+                sol[j].id = j;
+                sol[j].val += primal[j];
             }
 
         }
@@ -126,22 +122,15 @@ bool SolvSoplex::getVoltages(std::vector<double>& sol) {
         SoPlex& s = solvers[0];
         DVector primal(s.numColsReal());
         if(!s.getPrimalReal(primal) ) {
-            std::cerr<<"Error obtaining primal solution."<<std::endl;
-            return false;
+            throw std::runtime_error("SoPlex: Error obtaining primal solution.");
         }
         for (int j = 0; j < s.numColsReal(); j++) {
-            sol[j%nbNodes()] += primal[j];
+            sol[j%nbNodes()].id = j%nbNodes();
+            sol[j%nbNodes()].val += primal[j];
         }
         
     }
     
-    return true;
-}
-
-bool SolvSoplex::getCurrents(std::vector<double>& c_n,
-                             std::vector<double>& c_e) {
-    UNSUPPORTED;
-    return true;
 }
 
 #endif /*SOLVER_USE_SOPLEX */
