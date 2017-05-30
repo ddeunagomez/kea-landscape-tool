@@ -28,8 +28,10 @@ int main(int argc, char* argv[]) {
     PricingManager pm(3);
     LocalSearchEngine ls(p,&ss,&pm);
     std::cout<<"Created model"<<std::endl;
-    double bsol = ls.baseSolution();
-    std::cout<<"Solved model. R = "<<bsol<<std::endl;
+    ls.findBaseSolution();
+    struct LocalSearchEngine::solution sol;
+    sol = ls.getBaseSolution();
+    sol.print(std::cout,4);
 
     std::vector<id_val> vs;
     std::vector<std::vector<id_val> > vss;
@@ -39,14 +41,22 @@ int main(int argc, char* argv[]) {
         for (uint j = 0; j < vss[i].size(); j++)
             std::cout<<"v("<<vss[i][j].id<<") = "<<vss[i][j].val<<std::endl;
 
+
+    ls.findInitialSolution();
+    sol = ls.getInitialSolution();
+    sol.print(std::cout,4);
+    
+    return 0;
+
     std::vector<uint> upe;
     upe.push_back(2);
     std::vector<double> upv;
     upv.push_back(20);
     ss.updateConductances(upe,upv);
 
-    bsol = ls.baseSolution();
-    std::cout<<"Solved model. R = "<<bsol<<std::endl;
+    ls.findBaseSolution();
+    sol = ls.getBaseSolution();
+    std::cout<<"Solved model. R = "<<sol.obj<<std::endl;
 
     ss.getVoltages(vss,vs);
 
@@ -62,8 +72,6 @@ int main(int argc, char* argv[]) {
     for (uint i = 0; i < x.size(); i++)
         std::cout<<"c_n("<<x[i].id<<") = "<<x[i].val<<std::endl;
 
-    std::sort(y.begin(), y.end(), id_val::sort_by_val);
-    for (uint i = 0; i < y.size(); i++)
-        std::cout<<"c_e("<<y[i].id<<") = "<<y[i].val<<std::endl;
+    
     
 }

@@ -19,8 +19,6 @@ SolvArmadillo::~SolvArmadillo() {
 bool SolvArmadillo::compile() {
     if(!Solver::compile()) return false;
 
-    if (m == MULTI)
-        throw std::runtime_error("Cannot retrieve voltages for MULTI in Armadillo yet.");
     
     std::vector<std::pair<int,int> >& p = focals;
     laplacians.clear();

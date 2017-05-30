@@ -30,8 +30,9 @@ public:
 struct id_val { //shorthand for a pair, with nicer names
     int id;
     double val;
-    id_val() : id(0),val(0) {}
+    id_val(int _id = 0, double _val = 0) : id(_id),val(_val) {}
     static bool sort_by_val (id_val i, id_val j) { return (i.val < j.val); }
+    static bool sort_by_id  (id_val i, id_val j) { return (i.id < j.id); }
 };
 
 #endif
