@@ -1,13 +1,17 @@
 #include "local_search_engine.hpp"
 
 #include <algorithm>
+#include <ctime>
 
+const double LocalSearchEngine::DEFAULT_ALT = 1;
+const int LocalSearchEngine::DEFAULT_ITERS = 10;
+const float LocalSearchEngine::DEFAULT_TLIMIT = 200.0;
 
 LocalSearchEngine::LocalSearchEngine(std::vector<std::pair<int,int> > p,
                                      Solver* _s, PricingManager* _pm,
                                      Accepter* _acc)
-    : focals(p),s(_s),pm(_pm),acc(_acc){
-
+    : focals(p),s(_s),pm(_pm),acc(_acc),
+      iterations(DEFAULT_ITERS),time_limit(DEFAULT_TLIMIT) {
     s->compile();
 
 }
@@ -73,8 +77,11 @@ void LocalSearchEngine::solve() {
     struct solution accepted = init_sol;
     struct solution best = init_sol;
     acc->reset(init_sol.obj);
-    
-    while (iter < DEFAULT_ITERS) {
+
+    std::clock_t begin_time = clock();
+
+    while (iter < iterations &&
+           float(clock() - begin_time)/CLOCKS_PER_SEC < time_limit) {        
         iter++;
         std::vector<ECircuit::EdgeID> edges;
         std::vector<double> vals;

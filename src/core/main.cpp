@@ -51,6 +51,9 @@ int main(int argc, char* argv[]) {
     ls.findInitialSolution();
     sol = ls.getInitialSolution();
     sol.print(std::cout,1);
+
+    ls.setTimeLimit(8);
+    ls.solve();
     
     return 0;
 

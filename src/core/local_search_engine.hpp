@@ -60,7 +60,7 @@ private:
     std::vector<id_val> base;
     //Alternative values
     std::vector< std::vector<id_val> > alts;
-    const double DEFAULT_ALT = 1;
+    static const double DEFAULT_ALT;
     double getAlt(uint alt_id, int e) const {
         if (alt_id < alts.size()) {
             if (alts[alt_id][e].id != e) {
@@ -72,7 +72,10 @@ private:
         return DEFAULT_ALT;            
     }
 
-    const int DEFAULT_ITERS = 10;
+    int iterations;
+    static const int DEFAULT_ITERS;
+    float time_limit;
+    static const float DEFAULT_TLIMIT;
 
     void fillSolution(struct solution& solution);
     
@@ -88,12 +91,27 @@ public:
     }
 
     void findBaseSolution();
+
     inline struct solution getBaseSolution() const {
         return base_sol;
     }
+    
     void findInitialSolution();
+
     inline struct solution getInitialSolution() const {
         return init_sol;
+    }
+
+    inline void setMaxIterations(int i) {
+        if (i <= 0)
+            std::runtime_error("Cannot set number of iterations to < 1");
+        iterations = i;
+    }
+    
+    inline void setTimeLimit(float tl) {
+        if (tl <= 0)
+            std::runtime_error("Cannot set time limit to <= 0");
+        time_limit = tl;
     }
     
     void solve();
