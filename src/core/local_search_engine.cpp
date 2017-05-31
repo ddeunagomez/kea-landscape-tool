@@ -4,8 +4,9 @@
 
 
 LocalSearchEngine::LocalSearchEngine(std::vector<std::pair<int,int> > p,
-                                     Solver* _s, PricingManager* _pm)
-    : focals(p),s(_s),pm(_pm){
+                                     Solver* _s, PricingManager* _pm,
+                                     Accepter* _acc)
+    : focals(p),s(_s),pm(_pm),acc(_acc){
 
     s->compile();
 
@@ -45,8 +46,6 @@ void LocalSearchEngine::findInitialSolution() {
               id_val::sort_by_val);
     pm->reset();
 
-    base_sol.print(std::cout,4);
-    
     std::vector<ECircuit::EdgeID> edges;
     std::vector<double> vals;
     for (int i = s->nbEdges() - 1; i >=0; i--) {
@@ -73,7 +72,8 @@ void LocalSearchEngine::solve() {
     struct solution current = init_sol;
     struct solution accepted = init_sol;
     struct solution best = init_sol;
-
+    acc->reset(init_sol.obj);
+    
     while (iter < DEFAULT_ITERS) {
         iter++;
         std::vector<ECircuit::EdgeID> edges;
@@ -86,7 +86,9 @@ void LocalSearchEngine::solve() {
         if (current.obj < best.obj) {
             best = current;
         }
-        //Accept? (current vs accepted) -> new value for accepted
+        if (acc->accept(current.obj)) {
+            accepted = current;
+        }
         
     }
 

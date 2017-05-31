@@ -1,5 +1,7 @@
 #include <iostream>
 #include <vector>
+#include <time.h>
+#include <stdlib.h>
 
 #include "utils.hpp"
 #include "ecircuit.hpp"
@@ -8,11 +10,12 @@
 #include "solver_iter_petsc.hpp"
 #include "local_search_engine.hpp"
 #include "pricing_manager.hpp"
+#include "accepter.hpp"
 
 int main(int argc, char* argv[]) {
-
+    
     std::cout<< "=== Kea Landscape Tool ==="<<std::endl;
-
+    srand(time(NULL));
 
     std::vector<std::pair<int,int> > p;
     p.push_back(std::make_pair(0,4));
@@ -24,27 +27,30 @@ int main(int argc, char* argv[]) {
     SolvItPETSc ss(p,&argc,&argv,Solver::MULTI);
     ss.parseTextListFile(std::string(argv[1]));
     std::cout<<"Loaded file"<<std::endl;
-    ss.printECircuit();
+    //ss.printECircuit();
     PricingManager pm(3);
-    LocalSearchEngine ls(p,&ss,&pm);
+    SimulatedAnnealing accepter;
+    accepter.setTemperature(5);
+    accepter.setCoolingRate(0.98);
+    LocalSearchEngine ls(p,&ss,&pm,&accepter);
     std::cout<<"Created model"<<std::endl;
     ls.findBaseSolution();
     struct LocalSearchEngine::solution sol;
     sol = ls.getBaseSolution();
-    sol.print(std::cout,4);
+    sol.print(std::cout,1);
 
     std::vector<id_val> vs;
     std::vector<std::vector<id_val> > vss;
     ss.getVoltages(vss,vs);
-
+    /*
     for (uint i = 0; i < vss.size(); i++)
         for (uint j = 0; j < vss[i].size(); j++)
             std::cout<<"v("<<vss[i][j].id<<") = "<<vss[i][j].val<<std::endl;
-
+    //*/
 
     ls.findInitialSolution();
     sol = ls.getInitialSolution();
-    sol.print(std::cout,4);
+    sol.print(std::cout,1);
     
     return 0;
 

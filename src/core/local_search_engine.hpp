@@ -5,6 +5,7 @@
 #include <vector>
 #include "pricing_manager.hpp"
 #include "solver_iter_petsc.hpp"
+#include "accepter.hpp"
 
 class LocalSearchEngine {
 public:
@@ -54,11 +55,12 @@ private:
 
     Solver* s;
     PricingManager* pm;
+    Accepter* acc;
     //base values
     std::vector<id_val> base;
     //Alternative values
     std::vector< std::vector<id_val> > alts;
-    const double DEFAULT_ALT = 10;
+    const double DEFAULT_ALT = 1;
     double getAlt(uint alt_id, int e) const {
         if (alt_id < alts.size()) {
             if (alts[alt_id][e].id != e) {
@@ -76,7 +78,7 @@ private:
     
 public:
     LocalSearchEngine(std::vector<std::pair<int,int> > p,
-                      Solver* _s, PricingManager* _pm);
+                      Solver* _s, PricingManager* _pm, Accepter* _acc);
 
     virtual ~LocalSearchEngine();
 
@@ -86,11 +88,11 @@ public:
     }
 
     void findBaseSolution();
-    struct solution getBaseSolution() const {
+    inline struct solution getBaseSolution() const {
         return base_sol;
     }
     void findInitialSolution();
-    struct solution getInitialSolution() const {
+    inline struct solution getInitialSolution() const {
         return init_sol;
     }
     
