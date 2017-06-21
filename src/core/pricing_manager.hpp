@@ -30,6 +30,11 @@ public:
         }
         return false;
     }
+    inline void save(double how_much) {
+        current_budget += how_much;
+        if (current_budget > budget) //For precission error
+            current_budget = budget;
+    }
     inline void reset() {
         current_budget = budget;
     }

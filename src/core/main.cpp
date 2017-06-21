@@ -28,14 +28,14 @@ int main(int argc, char* argv[]) {
     ss.parseTextListFile(std::string(argv[1]));
     std::cout<<"Loaded file"<<std::endl;
     //ss.printECircuit();
-    PricingManager pm(3);
+    PricingManager pm(20);
     SimulatedAnnealing accepter;
     accepter.setTemperature(5);
     accepter.setCoolingRate(0.98);
     LocalSearchEngine ls(p,&ss,&pm,&accepter);
     std::cout<<"Created model"<<std::endl;
     ls.findBaseSolution();
-    struct LocalSearchEngine::solution sol;
+    Solution sol;
     sol = ls.getBaseSolution();
     sol.print(std::cout,1);
 
@@ -57,11 +57,9 @@ int main(int argc, char* argv[]) {
     
     return 0;
 
-    std::vector<uint> upe;
-    upe.push_back(2);
-    std::vector<double> upv;
-    upv.push_back(20);
-    ss.updateConductances(upe,upv);
+    std::vector<id_val> upe;
+    upe.push_back(id_val(2,20));
+    ss.updateConductances(upe);
 
     ls.findBaseSolution();
     sol = ls.getBaseSolution();

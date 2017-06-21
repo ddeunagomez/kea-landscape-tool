@@ -1,5 +1,5 @@
 #include "local_search_engine.hpp"
-
+#include "destroyer.hpp"
 #include <algorithm>
 #include <ctime>
 
@@ -11,16 +11,20 @@ LocalSearchEngine::LocalSearchEngine(std::vector<std::pair<int,int> > p,
                                      Solver* _s, PricingManager* _pm,
                                      Accepter* _acc)
     : focals(p),s(_s),pm(_pm),acc(_acc),
-      iterations(DEFAULT_ITERS),time_limit(DEFAULT_TLIMIT) {
+      iterations(DEFAULT_ITERS),time_limit(DEFAULT_TLIMIT){
     s->compile();
-
+    std::vector<id_val> original_alternative;
+    for (int i = 0; i < s->nbEdges(); i++) {
+        original_alternative.push_back(id_val(i,s->getCond(i)));
+    }
+    addAlt(original_alternative);
 }
 
 LocalSearchEngine::~LocalSearchEngine() {
 
 }
 
-void LocalSearchEngine::fillSolution(struct solution& solution) {
+void LocalSearchEngine::fillSolution(Solution& solution) {
     std::vector<id_val> dummy;
     s->getVoltages(solution.voltages,dummy);
     s->getCurrents(solution.currents_n, solution.currents_e);
@@ -50,17 +54,15 @@ void LocalSearchEngine::findInitialSolution() {
               id_val::sort_by_val);
     pm->reset();
 
-    std::vector<ECircuit::EdgeID> edges;
-    std::vector<double> vals;
+    std::vector<id_val> updates;
     for (int i = s->nbEdges() - 1; i >=0; i--) {
         int e = base_sol.currents_e[i].id;
         if (pm->consume(pm->getCost(e))) {
-            edges.push_back(e);
-            vals.push_back(getAlt(1,e));
-            init_sol.chosen_alt.push_back(id_val(e,1));
+            updates.push_back(id_val(e,getAlt(1,e)));
+            init_sol.choose(e,1);
         }
     }
-    s->updateConductances(edges,vals);
+    s->updateConductances(updates);
 
     s->solve();
     fillSolution(init_sol);
@@ -73,23 +75,28 @@ void LocalSearchEngine::solve() {
                                  " calling solve!");
     }
     int iter = -1;
-    struct solution current = init_sol;
-    struct solution accepted = init_sol;
-    struct solution best = init_sol;
+    Solution current = init_sol;
+    Solution accepted = init_sol;
+    Solution best = init_sol;
     acc->reset(init_sol.obj);
 
+   
     std::clock_t begin_time = clock();
 
     while (iter < iterations &&
            float(clock() - begin_time)/CLOCKS_PER_SEC < time_limit) {        
         iter++;
-        std::vector<ECircuit::EdgeID> edges;
-        std::vector<double> vals;
+        std::cout<<"Solve iteration "<< iter <<std::endl;
+        std::vector<id_val> updates;
         //Destroy accepted solution
-        //Create new soluition -> edge & vals
-        s->updateConductances(edges,vals);
+        Destroyer des(this,pm,Destroyer::INVRAND,Destroyer::WILRAND,5);
+        des.destroy(accepted,current,updates);
+        std::cout<<"Destroyed " <<std::endl;
+        s->updateConductances(updates);
         s->solve();
+        std::cout<<"Solved "<< std::endl;
         fillSolution(current);
+        current.print(std::cout,1);
         if (current.obj < best.obj) {
             best = current;
         }

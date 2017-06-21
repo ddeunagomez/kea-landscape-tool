@@ -36,8 +36,7 @@ public:
         return true;
     }
     
-    virtual void updateConductances(std::vector<ECircuit::EdgeID> e,
-                                    std::vector<double> v) {
+    virtual void updateConductances(std::vector<id_val>& ev) {
         throw unimplemented_solver("updateConductances");
     }
     

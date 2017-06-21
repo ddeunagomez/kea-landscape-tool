@@ -165,16 +165,15 @@ bool SolvItPETSc::compile() {
     return true;
 }
 
-void SolvItPETSc::updateConductances(std::vector<ECircuit::EdgeID> edges,
-                                     std::vector<double> vals) {
+void SolvItPETSc::updateConductances(std::vector<id_val>& ev) {
 
     for (uint i = 0; i < laplacians.size(); i++) {
         ierr = MatAssemblyBegin(*(laplacians[i]),MAT_FINAL_ASSEMBLY);ERROR1(ierr);
     }
     
-    for (uint i = 0; i < edges.size(); i++) {
-        int e = edges[i];
-        int c = vals[i];
+    for (uint i = 0; i < ev.size(); i++) {
+        int e = ev[i].id;
+        double c = ev[i].val;
         for (uint j = 0; j < e2m[e].size(); j++) {
             edge_pos data = e2m[e][j];
             //Erase old cond and add new one.
@@ -184,6 +183,7 @@ void SolvItPETSc::updateConductances(std::vector<ECircuit::EdgeID> edges,
                 //Offdiag : +old - new
                 val = +getCond(e) - c;
             }
+            //std::cout<<"ADD_VALUES "<<val<< " "<<getCond(e)<<" "<<c<<std::endl;
             ierr = MatSetValues(*(laplacians[data.mid]),1,
                                 &data.row,1,&data.col,&val,ADD_VALUES);
             ERROR1(ierr);

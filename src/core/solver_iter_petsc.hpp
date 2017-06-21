@@ -39,9 +39,9 @@ public:
     ~SolvItPETSc();
 
     bool compile();
-    
-    void updateConductances(std::vector<ECircuit::EdgeID> e,
-                            std::vector<double> v);
+
+    void updateConductances(std::vector<id_val>& ev);
+
     bool solve();
 
     void getVoltages(std::vector< std::vector<id_val> >& each,
