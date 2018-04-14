@@ -7,42 +7,42 @@
 class PricingManager {
 
     const double DEFAULT_COST = 1;
-    double budget;
-    double current_budget;
-    std::vector<id_val> costs;
+    double budget_;
+    double current_budget_;
+    std::vector<id_val> costs_;
 
 public:
     PricingManager(double b, std::vector<id_val> cs = std::vector<id_val>())
-        : budget(b), current_budget(b), costs(cs){
+        : budget_(b), current_budget_(b), costs_(cs){
 
     };
 
     inline double getCost(int e) {
-        if (costs.size() == 0) {
+        if (costs_.size() == 0) {
             return DEFAULT_COST;
         }
-        return costs[e].val;
+        return costs_[e].val;
     }
     inline bool consume(double v) {
-        if (current_budget - v >= 0) {
-            current_budget -= v;
+        if (current_budget_ - v >= 0) {
+            current_budget_ -= v;
             return true;
         }
         return false;
     }
     inline void save(double how_much) {
-        current_budget += how_much;
-        if (current_budget > budget) //For precission error
-            current_budget = budget;
+        current_budget_ += how_much;
+        if (current_budget_ > budget_) //For precission error
+            current_budget_ = budget_;
     }
     inline void reset() {
-        current_budget = budget;
+        current_budget_ = budget_;
     }
     inline double budgetLeft() const {
-        return current_budget;
+        return current_budget_;
     }
     inline double initialBudget() const {
-        return budget;
+        return budget_;
     }
 };
 

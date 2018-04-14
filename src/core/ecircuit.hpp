@@ -12,9 +12,9 @@ public:
     typedef std::pair<NodeID,NodeID> Edge;
 
 private:
-    std::vector<Edge> edges;
-    std::vector<double> conds;
-    std::vector< std::vector<EdgeID> > node_edges;
+    std::vector<Edge> edges_;
+    std::vector<double> conductances_;
+    std::vector< std::vector<EdgeID> > node_edge_map_;
     
 public:
     
@@ -27,44 +27,37 @@ public:
     //Returns the id of the new node
     NodeID addNode();
 
-    inline int nbNodes() const {return node_edges.size(); }
+    inline int nbNodes() const {return node_edge_map_.size(); }
     inline int nbEdges(int node = -1) const {
         assert(node >= -1);
         if (node == -1) {
-            return edges.size();
+            return edges_.size();
         } else {
-            assert((uint)node < node_edges.size());
-            return node_edges[node].size();
+            assert((uint)node < node_edge_map_.size());
+            return node_edge_map_[node].size();
         }
     }
 
     inline EdgeID getEdgeFrom(NodeID n, uint e) {
-        assert(n < node_edges.size());
-        assert(e < node_edges[n].size());
-        return node_edges[n][e];
+        assert(n < node_edge_map_.size());
+        assert(e < node_edge_map_[n].size());
+        return node_edge_map_[n][e];
     }
     
-    inline double getCond(EdgeID e) {
-        assert(e < conds.size());
-        return conds[e];
+    inline double getConductance(EdgeID e) {
+        assert(e < conductances_.size());
+        return conductances_[e];
     }
 
-    inline void updateCond(EdgeID e, double c) {
-        assert(e < conds.size());
-        conds[e] = c;
-    }
-
-
-    NodeID getU(EdgeID e) const {
-        assert(e < edges.size());
-        return edges[e].first;
-    }
-
-    NodeID getV(EdgeID e) const {
-        assert(e < edges.size());
-        return edges[e].second;
+    inline void updateConductance(EdgeID e, double c) {
+        assert(e < conductances_.size());
+        conductances_[e] = c;
     }
     
+    std::pair<NodeID,NodeID> getNodes(EdgeID e) {
+        return edges_[e];
+    }
+
     //Parse Circuitscape TextList file format
     bool parseTextListFile(std::string fname);
     

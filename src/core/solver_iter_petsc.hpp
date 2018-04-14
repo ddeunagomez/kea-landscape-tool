@@ -18,24 +18,24 @@ private:
     int argc;
     char** argv;
     
-    std::vector<Mat*> laplacians;
-    std::vector<Vec*> iflow;
-    std::vector<Vec*> voltages;
-    Mode m;
-    PetscErrorCode ierr;
+    std::vector<Mat*> laplacians_;
+    std::vector<Vec*> current_flow_;
+    std::vector<Vec*> voltages_;
+    Mode mode_;
+    PetscErrorCode petsc_error_;
     
     typedef struct edge_pos {
-        uint mid; //matrix id
+        uint matrix_id_; //matrix id
         int row;
         int col;
     } edge_pos;
     //Mappting from edges to the positions they influence in the
     //matrix
-    std::vector< std::vector<edge_pos> > e2m;
+    std::vector< std::vector<edge_pos> > edge2positions_;
 public:
 
     SolvItPETSc(std::vector<std::pair<int,int> >& p,
-                int* argc, char*** argv, Mode m = Solver::MULTI);
+                int* argc, char*** argv, Mode mode_ = Solver::MULTI);
     ~SolvItPETSc();
 
     bool compile();

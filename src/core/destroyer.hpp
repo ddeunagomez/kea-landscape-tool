@@ -6,30 +6,32 @@
 
 class Destroyer {
 public:
-    enum RemoveInv {INVRAND, INVLC, INVLCP};
-    enum NewInv {WILRAND, WILBFS, WILBFSRAND, WILHC, WILHCP};
+    enum RemoveInvetment {INVRAND, INVLC, INVLCP};
+    enum NewInvestment {WILRAND, WILBFS, WILHC, WILHCP};
 private:
-    LocalSearchEngine* ls;
-    PricingManager* pm;
-    RemoveInv invt;
-    NewInv newt;
+    LocalSearchEngine* local_search_;
+    PricingManager* pricing_manager_;
+    RemoveInvetment remove_strategy_;
+    NewInvestment add_strategy_;
     //Rate is just a counter of edges for now.
     //Maybe crete a mode where its s budget instead?
-    int rate;
-    int used_rate;
-    bool stillAvailableRate() {return used_rate < rate; }
-    void removeInv(int e) {
-        rate--;
-        pm->save(pm->getCost(e));
+    int destruction_rate_;
+    int consumed_rate_;
+    bool hasAvailableRate() {return consumed_rate_ < destruction_rate_; }
+    void removeInvestment(int e) {
+        destruction_rate_--;
+        pricing_manager_->save(pricing_manager_->getCost(e));
     }
 
     //Temporaary state:
-    std::vector<bool> changed;
+    std::vector<bool> changed_;
+
+    float getMaxCurrent(Solution& sol);
 public:
     Destroyer(LocalSearchEngine* ls, PricingManager* pm,
-              RemoveInv t1, NewInv t2,
+              RemoveInvetment t1, NewInvestment t2,
               int rate) :
-        ls(ls), pm(pm),invt(t1),newt(t2), rate(rate), used_rate(0) { }
+        local_search_(ls), pricing_manager_(pm),remove_strategy_(t1),add_strategy_(t2), destruction_rate_(rate), consumed_rate_(0) { }
    
 
 
@@ -39,10 +41,10 @@ public:
 
 protected:
     //Destroyer functions:
-    void destroy_invlc_e(Solution& sol,
+    void destroyLeastCurrentEdges(Solution& sol,
                          Solution& new_sol,
                          std::vector<id_val>& model_update);
-    void destroy_wilhcp_e(Solution& sol,
+    void addWildEdgesHighCurrentProb(Solution& sol,
                           Solution& new_sol,
                           std::vector<id_val>& model_update);
 };

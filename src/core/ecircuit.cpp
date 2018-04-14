@@ -15,22 +15,22 @@ ECircuit::~ECircuit() {
 }
 
 ECircuit::EdgeID ECircuit::addEdge(NodeID u, NodeID v, double cond) {
-    assert(u < node_edges.size());
-    assert(v < node_edges.size());
+    assert(u < node_edge_map_.size());
+    assert(v < node_edge_map_.size());
 
-    int e = edges.size();
-    node_edges[u].push_back(e);
-    node_edges[v].push_back(e);
-    edges.push_back(std::make_pair(u,v));
+    int e = edges_.size();
+    node_edge_map_[u].push_back(e);
+    node_edge_map_[v].push_back(e);
+    edges_.push_back(std::make_pair(u,v));
 
-    conds.push_back(cond);
+    conductances_.push_back(cond);
     
     return e;
 }
 
 ECircuit::NodeID ECircuit::addNode() {
-    int n = node_edges.size();
-    node_edges.push_back(vector<EdgeID>());
+    int n = node_edge_map_.size();
+    node_edge_map_.push_back(vector<EdgeID>());
     return n;
 }
 
@@ -81,16 +81,16 @@ bool ECircuit::parseTextListFile(std::string fname) {
 
 void ECircuit::printECircuit() {
     cout<<"{|"<<endl;
-    cout<<"Nodes: "<< node_edges.size()<<endl;
-    cout<<"Edges: "<< edges.size()<<endl;
-    for (uint i = 0; i < node_edges.size(); i++) {
+    cout<<"Nodes: "<< node_edge_map_.size()<<endl;
+    cout<<"Edges: "<< edges_.size()<<endl;
+    for (uint i = 0; i < node_edge_map_.size(); i++) {
         cout<<"["<<i<<"]: ";
-        for (uint j = 0; j < node_edges[i].size(); j++) {
-            EdgeID e = node_edges[i][j];
-            NodeID other = edges[e].first == i ?
-                edges[e].second :
-                edges[e].first;
-            cout<<"("<<node_edges[i][j]<<","<<other<<","<<conds[e]<<") ";
+        for (uint j = 0; j < node_edge_map_[i].size(); j++) {
+            EdgeID e = node_edge_map_[i][j];
+            NodeID other = edges_[e].first == i ?
+                edges_[e].second :
+                edges_[e].first;
+            cout<<"("<<node_edge_map_[i][j]<<","<<other<<","<<conductances_[e]<<") ";
         }
         cout<<endl;
     }

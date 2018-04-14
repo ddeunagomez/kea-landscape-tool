@@ -16,14 +16,14 @@
 class SolvArmadillo : public Solver {
 
 private:
-    std::vector<arma::sp_mat> laplacians;
-    std::vector<arma::vec> iflow;
-    std::vector<arma::vec> voltages;
+    std::vector<arma::sp_mat> laplacians_;
+    std::vector<arma::vec> current_flow_;
+    std::vector<arma::vec> voltages_;
     
-    Mode m;
+    Mode mode_;
 public:
 
-    SolvArmadillo(std::vector<std::pair<int,int> >& p, Mode m = MULTI);
+    SolvArmadillo(std::vector<std::pair<int,int> >& p, Mode mode_ = MULTI);
     ~SolvArmadillo();
 
     bool compile();

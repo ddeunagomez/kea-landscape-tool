@@ -18,8 +18,8 @@ int main(int argc, char* argv[]) {
     srand(time(NULL));
 
     std::vector<std::pair<int,int> > p;
-    p.push_back(std::make_pair(0,4));
-    p.push_back(std::make_pair(2,3));
+    p.push_back(std::make_pair(89,1030));
+    //p.push_back(std::make_pair(2,3));
 
     
     //SolvSoplex ss(p,SolvSoplex::UNIQUE);
@@ -63,7 +63,7 @@ int main(int argc, char* argv[]) {
 
     ls.findBaseSolution();
     sol = ls.getBaseSolution();
-    std::cout<<"Solved model. R = "<<sol.obj<<std::endl;
+    std::cout<<"Solved model. R = "<<sol.objective_<<std::endl;
 
     ss.getVoltages(vss,vs);
 

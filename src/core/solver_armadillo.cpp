@@ -7,7 +7,7 @@
 using namespace arma;
 
 SolvArmadillo::SolvArmadillo(std::vector<std::pair<int,int> >& p,
-                             Mode m) : Solver(p), m(m) {
+                             Mode m) : Solver(p), mode_(m) {
 
    
 }
@@ -21,38 +21,39 @@ bool SolvArmadillo::compile() {
 
     
     std::vector<std::pair<int,int> >& p = focals;
-    laplacians.clear();
-    iflow.clear();
-    voltages.clear();
+    laplacians_.clear();
+    current_flow_.clear();
+    voltages_.clear();
 
     int n = nbNodes();
-    int dim = m == MULTI ? n-1 : (n-1) * p.size();
-    laplacians.push_back(sp_mat(dim,dim));
-    iflow.push_back(zeros<vec>(dim));
-    voltages.push_back(vec(dim));
+    int dim = mode_ == MULTI ? n-1 : (n-1) * p.size();
+    laplacians_.push_back(sp_mat(dim,dim));
+    current_flow_.push_back(zeros<vec>(dim));
+    voltages_.push_back(vec(dim));
     for (uint i = 0; i < p.size(); i++) {
         int s = p[i].first;
         int t = p[i].second;
         if (s == t)
             continue;
-        if (i > 0 && m == MULTI) {
-            laplacians.push_back(sp_mat(n - 1,n - 1));
-            iflow.push_back(zeros<vec>(n - 1));
-            voltages.push_back(vec(n - 1));
+        if (i > 0 && mode_ == MULTI) {
+            laplacians_.push_back(sp_mat(n - 1,n - 1));
+            current_flow_.push_back(zeros<vec>(n - 1));
+            voltages_.push_back(vec(n - 1));
         }
-        sp_mat& lap = laplacians.back();        
+        sp_mat& lap = laplacians_.back();
 
-        int rshift = m == UNIQUE ? i*(n-1) : 0;
-        int cshift = m == UNIQUE ? i*(n-1) : 0;
+        int rshift = mode_ == UNIQUE ? i*(n-1) : 0;
+        int cshift = mode_ == UNIQUE ? i*(n-1) : 0;
 
         if (s < t)
-            iflow.back()[rshift+s] = 1;
+            current_flow_.back()[rshift+s] = 1;
         else
-            iflow.back()[rshift+s - 1] = 1;
+            current_flow_.back()[rshift+s - 1] = 1;
         
         for (int e = 0; e < nbEdges(); e++) {
-            int u = getU(e);
-            int v = getV(e);
+            std::pair<NodeID,NodeID> uv = getNodes(e);
+            int u = uv.first;
+            int v = uv.second;
             if (u == t || v == t) {
                 continue;
             }            
@@ -60,8 +61,8 @@ bool SolvArmadillo::compile() {
             if (v > t) v--;
             //std::cout<<"Access ("<<rshift+u<<","<<cshift+v<<")"<<std::endl;
             //std::cout<<"Access ("<<rshift+v<<","<<cshift+u<<")"<<std::endl;
-            lap(rshift+u, cshift+v) = lap(rshift+u, cshift+v)-getCond(e);
-            lap(rshift+v, cshift+u) = lap(rshift+v, cshift+u)-getCond(e);
+            lap(rshift+u, cshift+v) = lap(rshift+u, cshift+v)-getConductance(e);
+            lap(rshift+v, cshift+u) = lap(rshift+v, cshift+u)-getConductance(e);
         }
         //std::cout<<"Done "<<t<<" "<<rshift<<" "<<cshift<<std::endl;
 
@@ -73,7 +74,7 @@ bool SolvArmadillo::compile() {
             double s = 0;
             for (int k = 0; k < nbEdges(j); k++) {
                 ECircuit::EdgeID e = getEdgeFrom(j,k);
-                s += getCond(e);
+                s += getConductance(e);
             }
             //std::cout<<"Diag ("<<rshift+rj<<","<<cshift+rj<<")"<<std::endl;
             lap(rshift+rj, cshift+rj) = s;
@@ -91,8 +92,8 @@ bool SolvArmadillo::compile() {
 
 
 bool SolvArmadillo::solve() {
-    for (uint i = 0; i < laplacians.size(); i++) {
-        voltages[i] = spsolve(laplacians[i],iflow[i],"lapack");
+    for (uint i = 0; i < laplacians_.size(); i++) {
+        voltages_[i] = spsolve(laplacians_[i],current_flow_[i],"lapack");
     }
     return true;
 }
@@ -110,9 +111,9 @@ void SolvArmadillo::getVoltages(std::vector< std::vector<id_val> >& each,
         int t = focals[i].second;
         if (s == t)
             continue;
-        vec& vi = voltages[0];
-        if (m == MULTI)
-            vi = voltages[i];
+        vec& vi = voltages_[0];
+        if (mode_ == MULTI)
+            vi = voltages_[i];
         for (int j = 0; j < nbNodes(); j++) {
             all[j].id = j;
             each[i][j].id = j;
@@ -122,7 +123,7 @@ void SolvArmadillo::getVoltages(std::vector< std::vector<id_val> >& each,
                 idx = j - 1;
             else 
                 idx = j;
-            if (m == UNIQUE)
+            if (mode_ == UNIQUE)
                 idx += (nbNodes() - 1)*i;
             all[j].val += vi[idx];
             each[i][j].val += vi[idx];

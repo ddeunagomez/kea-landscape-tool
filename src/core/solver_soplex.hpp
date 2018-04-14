@@ -16,16 +16,16 @@
 class SolvSoplex : public Solver {
 
 private:
-    struct RC {
+    struct RowColumn {
         int row;
         int col;
     };
-    std::vector<soplex::SoPlex> solvers;
-    std::unordered_map<ECircuit::EdgeID, std::vector<RC> > edge_pos;
-    Mode m;
+    std::vector<soplex::SoPlex> soplex_solvers_;
+    std::unordered_map<ECircuit::EdgeID, std::vector<RowColumn> > edge_positions_;
+    Mode mode_;
 public:
 
-    SolvSoplex(std::vector<std::pair<int,int> >& p, Mode m = MULTI);
+    SolvSoplex(std::vector<std::pair<int,int> >& p, Mode mode_ = MULTI);
     ~SolvSoplex();
 
     bool compile();

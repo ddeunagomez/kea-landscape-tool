@@ -3,7 +3,7 @@
 #include <math.h>
 
 bool Accepter::accept(double v) {
-    accepted = v;
+    accepted_objective_ = v;
     return true;
 }
 
@@ -16,10 +16,10 @@ bool AcceptBetter::accept(double v) {
 bool SimulatedAnnealing::accept(double v) {
     double val = (double)rand()/(double)(RAND_MAX);
 
-    double prob = exp((getAccepted() - v)/temp);
+    double prob = exp((getAccepted() - v)/temperature_);
 
-    temp *= cr;
-    if (temp < 1.0) temp = 1.0;
+    temperature_ *= cooling_rate_;
+    if (temperature_ < 1.0) temperature_ = 1.0;
 
     if (val < prob)
         return Accepter::accept(v);

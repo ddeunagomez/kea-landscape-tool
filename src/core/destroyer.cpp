@@ -5,16 +5,15 @@ void Destroyer::destroy(Solution& sol,
                         Solution& new_sol,
                         std::vector<id_val>& model_update) {
 
-    used_rate = 0;
-    changed = std::vector<bool>(sol.currents_e.size(),false);
+    consumed_rate_ = 0;
+    changed_ = std::vector<bool>(sol.edge_currents_.size(),false);
 
-    destroy_invlc_e(sol,new_sol,model_update);
-    destroy_wilhcp_e(sol,new_sol,model_update);
     
-    switch(invt) {
+    switch(remove_strategy_) {
     case INVRAND:
         break;
     case INVLC:
+        destroyLeastCurrentEdges(sol,new_sol,model_update);
         break;
     case INVLCP:
         break;
@@ -22,35 +21,49 @@ void Destroyer::destroy(Solution& sol,
         throw std::runtime_error("Unknown LP destroyer for RemoveInv");
     }
     
+    switch(add_strategy_) {
+    case WILRAND:
+        break;
+    case WILBFS:
+        break;
+    case WILHC:
+        break;
+    case WILHCP:
+        addWildEdgesHighCurrentProb(sol,new_sol,model_update);
+        break;
+    default:
+        throw std::runtime_error("Unknown LP destroyer for RemoveInv");
+    }
 
 
     if (sol == new_sol) {
         std::cout<<"WARNING: Stuck in local minimum. Getting out now."
                  <<std::endl;;
         // Call a probabilistic method to get out of local minimum
-        destroy_invlc_e(sol,new_sol,model_update);
-        destroy_wilhcp_e(sol,new_sol,model_update);
+        destroyLeastCurrentEdges(sol,new_sol,model_update);
+        addWildEdgesHighCurrentProb(sol,new_sol,model_update);
     }
     
 }
 
 
-void Destroyer::destroy_invlc_e(Solution& sol,
+void Destroyer::destroyLeastCurrentEdges(Solution& sol,
                                 Solution& new_sol,
                                 std::vector<id_val>& model_update) {
 
-    std::sort(sol.currents_e.begin(), sol.currents_e.end(), id_val::sort_by_val);
+    std::sort(sol.edge_currents_.begin(), sol.edge_currents_.end(), id_val::sort_by_val);
 
     uint i = 0;
-    while (i < sol.currents_e.size() && stillAvailableRate()) {
-        int e = sol.currents_e[i].id;
+    while (i < sol.edge_currents_.size() && hasAvailableRate()) {
+        int e = sol.edge_currents_[i].id;
         if (sol.chosen(e)) {
-            removeInv(e);      //Account edge e into rate
-            changed[e] = true; //Do not invest on e, I just disinvested!
-            model_update.push_back(id_val(e,ls->getAlt(0,e))); //Set to original
+            removeInvestment(e);      //Account edge e into rate
+            changed_[e] = true; //Do not invest on e, I just disinvested!
+            model_update.push_back(id_val(e,local_search_->getAlternativeConductance(0,e))); //Set to original
             //std::cout<<"Alternative "<<model_update.back().id
             //<<" "<<model_update.back().val<<std::endl;
             new_sol.discard(e);
+            consumed_rate_++;
         }
         i++;
     }
@@ -58,96 +71,82 @@ void Destroyer::destroy_invlc_e(Solution& sol,
 }
 
 
-void Destroyer::destroy_wilhcp_e(Solution& sol,
+float Destroyer::getMaxCurrent(Solution& sol) {
+    float max_curr = 0.0;
+    int nb_edges = sol.edge_currents_.size();
+    for (int i = 0; i < nb_edges; i++) {
+        max_curr = MAX(max_curr,sol.edge_currents_[i].val);
+    }
+    return max_curr;
+}
+
+void Destroyer::addWildEdgesHighCurrentProb(Solution& sol,
                                  Solution& new_sol,
                                  std::vector<id_val>& model_update) {
-    float max_curr = 0.0;
-    int nb_edges = sol.currents_e.size();
-    for (int i = 0; i < nb_edges; i++) {
-        max_curr = MAX(max_curr,sol.currents_e[i].val);
-    }
-    float threshold = max_curr/(10.0*ls->nbFocals()); //TODO: option for this
+
+    float max_curr = getMaxCurrent(sol);
+    float threshold = max_curr/(10.0*local_search_->nbFocals()); //TODO: option for this
+
     std::vector<id_val> probabilities;
-    int low = 0, high = 0;
-    int prob_size = 0;
-    for (int e = 0; e < nb_edges; e++) {
-        if (sol.currents_e[e].val < threshold) low++;	
-        else high++;
-        probabilities.push_back(id_val(-1,-1));
-    }
-    assert(high > 0);
-    double gambling_budget = 0;
-    for (int e = 0; e < nb_edges; e++) {
-        if(sol.currents_e[e].val < threshold)
+    int nb_edges = sol.edge_currents_.size();
+
+    float gambling_budget = 0;
+    for (int edge = 0; edge < nb_edges; edge++) {
+        if(sol.edge_currents_[edge].val < threshold)
             continue;
-        if (!ls->worthInvest(e))
+        if (!local_search_->worthInvest(edge))
             continue;
-        if (sol.chosen(e))
+        if (sol.chosen(edge) || changed_[edge])
             continue;
-        if (changed[e])
-            continue;
-        float ecurr = sol.currents_e[prob_size].val;
-        if (e == 0)
-            probabilities[prob_size].val = ecurr;
-        else
-            probabilities[prob_size].val = ecurr
-                + probabilities[prob_size - 1].val;
-        probabilities[prob_size].id = e;
-        gambling_budget += pm->getCost(e);
-        prob_size++;
+
+        float edge_current = sol.edge_currents_[edge].val;
+        probabilities.push_back(id_val(edge, edge_current +
+                                       (probabilities.size() ? probabilities.back().val : 0.0)));
+        gambling_budget += pricing_manager_->getCost(edge);
     }
 
     //I can buy more than I selected
-    if (gambling_budget < pm->budgetLeft()){
+    if (gambling_budget < pricing_manager_->budgetLeft()){
         std::vector<int> deck(nb_edges);
         std::iota(deck.begin(), deck.end(),0);
         std::random_shuffle(deck.begin(),deck.end());
         for (int i = 0;
-             i < nb_edges && gambling_budget <= pm->budgetLeft();
+             i < nb_edges && gambling_budget <= pricing_manager_->budgetLeft();
              i++) {
-            int e = deck[i];
-            if (!ls->worthInvest(e))
+            int edge = deck[i];
+            if (!local_search_->worthInvest(edge))
                 continue;
-            if (sol.chosen(e))
+            if (sol.chosen(edge) || changed_[edge])
                 continue;
-            if (changed[e])
-                continue;
-            float ecurr = sol.currents_e[e].val;
-            if(sol.currents_e[e].val < threshold) {
-                if (prob_size == 0)
-                    probabilities[prob_size].val = ecurr;
-                else
-                    probabilities[prob_size].val = ecurr
-                        + probabilities[prob_size-1].val;
-                probabilities[prob_size].id = e;
-                gambling_budget += pm->getCost(e);
-                prob_size++;
+            float edge_current = sol.edge_currents_[edge].val;
+            if(edge_current < threshold) {
+                probabilities.push_back(id_val(edge, edge_current +
+                                               (probabilities.size() ? probabilities.back().val : 0.0)));
+                gambling_budget += pricing_manager_->getCost(edge);
             }
         }
-        //assert(prob_size == count);
     } 
 
-    assert(gambling_budget >= pm->budgetLeft());
+    assert(gambling_budget >= pricing_manager_->budgetLeft());
 
     //In case I hit exactly the budget:
-    if (gambling_budget == pm->budgetLeft()) {
-        for (int i = 0; i < prob_size; i++) {
+    if (gambling_budget == pricing_manager_->budgetLeft()) {
+        for (uint i = 0; i < probabilities.size(); i++) {
             int e = probabilities[i].id;
-            model_update.push_back(id_val(e,ls->getAlt(1,e))); 
-            new_sol.choose(e,ls->getAlt(1,e));
+            model_update.push_back(id_val(e,local_search_->getAlternativeConductance(1,e))); 
+            new_sol.choose(e,local_search_->getAlternativeConductance(1,e));
         }
         return;
     }
 
     //General case:
-    int last = prob_size - 1;
-    while(pm->budgetLeft() > 0 && prob_size > 0) {
+    while(pricing_manager_->budgetLeft() > 0 && probabilities.size() > 0) {
 
-        double val = probabilities[last].val
+        double val = probabilities.back().val
             * (double)rand() / (double)(RAND_MAX);
-        int lo = 0; int hi = prob_size - 1;
+        int lo = 0; int hi = probabilities.size() - 1;
         int mid = lo + (hi - lo)/2;
-        //Dicho search for the edge with that value
+        //Binary search for the edge with that value
         while (lo < hi) {
             mid = lo + (hi - lo)/2;
             if (mid == 0 ||
@@ -164,23 +163,16 @@ void Destroyer::destroy_wilhcp_e(Solution& sol,
                                          "currents are wrong)");
             }
         }
-        
-        int check = 0;
-        while (probabilities[mid].id == -1) {
-            ++mid; 
-            mid %= prob_size;
-            check++;
-            if (check >= 2*prob_size) //Looped twice: nothing left to select!
-                return;
-            assert(check < 2* prob_size);
-        }
         int edge = probabilities[mid].id;
-        probabilities[mid].id = -1; //Erase edge
-        prob_size--;
-        if (mid >= last) last = mid - 1; //For scalling correctly the prob
-    	if (pm->consume(pm->getCost(edge))) {
-            model_update.push_back(id_val(edge,ls->getAlt(1,edge)));
-            new_sol.choose(edge,ls->getAlt(1,edge));
+        float ecurr = sol.edge_currents_[edge].val;
+        for (uint i = mid; i < probabilities.size() - 1; i++) {
+            probabilities[i].val -= ecurr;
+            probabilities[i].id = probabilities[i+1].id;
+        }
+        probabilities.pop_back();
+        if (pricing_manager_->consume(pricing_manager_->getCost(edge))) {
+            model_update.push_back(id_val(edge,local_search_->getAlternativeConductance(1,edge)));
+            new_sol.choose(edge,local_search_->getAlternativeConductance(1,edge));
     	}
     }
     

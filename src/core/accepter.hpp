@@ -3,15 +3,15 @@
 
 class Accepter {
 
-    double accepted;
+    double accepted_objective_;
 public:
     Accepter() {} 
 
     inline void reset(double initial) {
-        accepted = initial;
+        accepted_objective_ = initial;
     }
     inline double getAccepted() const {
-        return accepted;
+        return accepted_objective_;
     }
     bool accept(double value);
 };
@@ -24,15 +24,15 @@ public:
 };
 
 class SimulatedAnnealing : public Accepter {
-    double temp;
-    double cr;
+    double temperature_;
+    double cooling_rate_;
 public:
-    SimulatedAnnealing() : Accepter(),temp(1),cr(1) {}
+    SimulatedAnnealing() : Accepter(),temperature_(1),cooling_rate_(1) {}
     inline void setTemperature(double t) {
-        temp = t;
+        temperature_ = t;
     }
     inline void setCoolingRate(double _cr) {
-        cr = _cr;
+        cooling_rate_ = _cr;
     }
     bool accept(double value);
 };
