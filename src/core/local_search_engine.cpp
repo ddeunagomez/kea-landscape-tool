@@ -4,7 +4,7 @@
 #include <ctime>
 
 const double LocalSearchEngine::DEFAULT_ALT = 1;
-const int LocalSearchEngine::DEFAULT_ITERS = 10;
+const int LocalSearchEngine::DEFAULT_ITERS = 50;
 const float LocalSearchEngine::DEFAULT_TLIMIT = 200.0;
 
 LocalSearchEngine::LocalSearchEngine(std::vector<std::pair<int,int> > p,
@@ -62,9 +62,6 @@ void LocalSearchEngine::findInitialSolution() {
         }
     }
     solver_->updateConductances(updates);
-    std::cout<<"HERE "<<std::endl;
-    initial_solution_.print(std::cout);
-    std::cout<<"DONE"<<std::endl;
     solver_->solve();
     fillSolution(initial_solution_);
 }
@@ -89,7 +86,7 @@ void LocalSearchEngine::solve() {
         std::cout<<"Solve iteration "<< iter <<std::endl;
         std::vector<id_val> updates;
         //Destroy accepted solution
-        Destroyer des(this,pricing_manager_,Destroyer::INVLC,Destroyer::WILHCP,5);
+        Destroyer des(this,pricing_manager_,Destroyer::kRandomRemove,Destroyer::kRandomAdd,5);
         des.destroy(accepted,current,updates);
         std::cout<<"Destroyed " <<std::endl;
         solver_->updateConductances(updates);

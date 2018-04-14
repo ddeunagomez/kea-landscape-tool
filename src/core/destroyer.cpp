@@ -10,26 +10,34 @@ void Destroyer::destroy(Solution& sol,
 
     
     switch(remove_strategy_) {
-    case INVRAND:
+    case kRandomRemove:
+        destroyRandomEdges(sol,new_sol,model_update);
         break;
-    case INVLC:
+    case kLeastCost:
         destroyLeastCurrentEdges(sol,new_sol,model_update);
         break;
-    case INVLCP:
+    case kLowCostProbability:
+        destroyLowCurrentEdgesProb(sol,new_sol,model_update);
         break;
     default:
         throw std::runtime_error("Unknown LP destroyer for RemoveInv");
     }
     
     switch(add_strategy_) {
-    case WILRAND:
+    case kRandomAdd:
+        addRandomEdges(sol,new_sol,model_update);
         break;
-    case WILBFS:
+    case kBfs:
+        addBfsEdges(sol,new_sol,model_update);
         break;
-    case WILHC:
+    case kBfsRandom:
+        addBfsRandomEdges(sol,new_sol,model_update);
         break;
-    case WILHCP:
-        addWildEdgesHighCurrentProb(sol,new_sol,model_update);
+    case kHighestCurrent:
+        addHighestCurrentEdges(sol,new_sol,model_update);
+        break;
+    case kHigCurrentProbability:
+        addHighCurrentEdgesProb(sol,new_sol,model_update);
         break;
     default:
         throw std::runtime_error("Unknown LP destroyer for RemoveInv");
@@ -41,7 +49,7 @@ void Destroyer::destroy(Solution& sol,
                  <<std::endl;;
         // Call a probabilistic method to get out of local minimum
         destroyLeastCurrentEdges(sol,new_sol,model_update);
-        addWildEdgesHighCurrentProb(sol,new_sol,model_update);
+        addHighCurrentEdgesProb(sol,new_sol,model_update);
     }
     
 }
@@ -55,14 +63,14 @@ void Destroyer::destroyLeastCurrentEdges(Solution& sol,
 
     uint i = 0;
     while (i < sol.edge_currents_.size() && hasAvailableRate()) {
-        int e = sol.edge_currents_[i].id;
-        if (sol.chosen(e)) {
-            removeInvestment(e);      //Account edge e into rate
-            changed_[e] = true; //Do not invest on e, I just disinvested!
-            model_update.push_back(id_val(e,local_search_->getAlternativeConductance(0,e))); //Set to original
+        int edge = sol.edge_currents_[i].id;
+        if (sol.chosen(edge)) {
+            removeInvestment(edge);      //Account edge e into rate
+            changed_[edge] = true; //Do not invest on e, I just disinvested!
+            model_update.push_back(id_val(edge,local_search_->getAlternativeConductance(0,edge))); //Set to original
             //std::cout<<"Alternative "<<model_update.back().id
             //<<" "<<model_update.back().val<<std::endl;
-            new_sol.discard(e);
+            new_sol.discard(edge);
             consumed_rate_++;
         }
         i++;
@@ -70,6 +78,34 @@ void Destroyer::destroyLeastCurrentEdges(Solution& sol,
 
 }
 
+
+void Destroyer::destroyRandomEdges(Solution& sol,
+                        Solution& new_sol,
+                        std::vector<id_val>& model_update) {
+    std::vector<int> deck(sol.edge_currents_.size());
+    std::iota(deck.begin(), deck.end(),0);
+    std::random_shuffle(deck.begin(),deck.end());
+    int i = 0;
+    while (i < sol.edge_currents_.size() && hasAvailableRate()) {
+        int edge = deck[i];
+        if (sol.chosen(edge)) {
+            removeInvestment(edge);
+            changed_[edge] = true;
+            model_update.push_back(id_val(edge,local_search_->getAlternativeConductance(0,edge))); //Set to original
+            new_sol.discard(edge);
+            consumed_rate_++;
+        }
+
+        i++;
+    }
+}
+
+
+void Destroyer::destroyLowCurrentEdgesProb(Solution& sol,
+                        Solution& new_sol,
+                        std::vector<id_val>& model_update) {
+    throw std::runtime_error("Not implemented yet");
+}
 
 float Destroyer::getMaxCurrent(Solution& sol) {
     float max_curr = 0.0;
@@ -80,7 +116,7 @@ float Destroyer::getMaxCurrent(Solution& sol) {
     return max_curr;
 }
 
-void Destroyer::addWildEdgesHighCurrentProb(Solution& sol,
+void Destroyer::addHighCurrentEdgesProb(Solution& sol,
                                  Solution& new_sol,
                                  std::vector<id_val>& model_update) {
 
@@ -176,4 +212,42 @@ void Destroyer::addWildEdgesHighCurrentProb(Solution& sol,
     	}
     }
     
+}
+
+void Destroyer::addRandomEdges(Solution &sol, Solution &new_sol, std::vector<id_val> &model_update) {
+
+    std::vector<int> deck(sol.edge_currents_.size());
+    std::iota(deck.begin(), deck.end(),0);
+    std::random_shuffle(deck.begin(),deck.end());
+    int i = 0;
+    while(i < deck.size() && pricing_manager_->budgetLeft()) {
+        int edge = deck[i];
+        if (local_search_->worthInvest(edge) &&
+            !sol.chosen(edge) && !changed_[edge] &&
+            pricing_manager_->consume(pricing_manager_->getCost(edge))) {
+            model_update.push_back(id_val(edge,local_search_->getAlternativeConductance(1,edge)));
+            new_sol.choose(edge,local_search_->getAlternativeConductance(1,edge));
+        }
+        i++;
+    }
+}
+
+void Destroyer::addHighestCurrentEdges(Solution& sol,
+                      Solution& new_sol,
+                      std::vector<id_val>& model_update) {
+
+    throw std::runtime_error("Not implemented yet");
+}
+
+void Destroyer::addBfsEdges(Solution& sol,
+                      Solution& new_sol,
+                      std::vector<id_val>& model_update) {
+
+    throw std::runtime_error("Not implemented yet");
+}
+
+void Destroyer::addBfsRandomEdges(Solution& sol,
+                      Solution& new_sol,
+                      std::vector<id_val>& model_update) {
+    throw std::runtime_error("Not implemented yet");
 }
