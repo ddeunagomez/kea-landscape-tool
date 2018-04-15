@@ -17,14 +17,25 @@
         } } while(0)
 #define ERROR1(c) ERROR(c,"PETSc error: ")
 
-SolverPetsc::SolverPetsc(std::vector<std::pair<int,int> >& p,
-                         int* _argc, char*** _argv,
+SolverPetsc::SolverPetsc(const std::vector<NodeID>& p,
+            int* petsc_options_count, char*** petsc_options, MultifocalMatrixMode m) : Solver(p,m)  {
+
+    petsc_options_count_ = *petsc_options_count;
+    petsc_options_ = new char*[petsc_options_count_];
+    for (int i = 0; i < petsc_options_count_; i++) {
+        petsc_options_[i] = new char[strlen((*petsc_options)[i])];
+        memcpy(petsc_options_[i],(*petsc_options)[i],strlen((*petsc_options)[i])*sizeof(char));
+    }
+}
+
+SolverPetsc::SolverPetsc(const std::vector<std::pair<NodeID,NodeID> >& p,
+                         int* petsc_options_count, char*** petsc_options,
                          MultifocalMatrixMode m) : Solver(p,m) {
-    argc = *_argc;
-    argv = new char*[argc];
-    for (int i = 0; i < argc; i++) {
-        argv[i] = new char[strlen((*_argv)[i])];
-        memcpy(argv[i],(*_argv)[i],strlen((*_argv)[i])*sizeof(char));
+    petsc_options_count_ = *petsc_options_count;
+    petsc_options_ = new char*[petsc_options_count_];
+    for (int i = 0; i < petsc_options_count_; i++) {
+        petsc_options_[i] = new char[strlen((*petsc_options)[i])];
+        memcpy(petsc_options_[i],(*petsc_options)[i],strlen((*petsc_options)[i])*sizeof(char));
     }
 
 }
@@ -40,8 +51,7 @@ SolverPetsc::~SolverPetsc() {
 bool SolverPetsc::compile() {
     if(!Solver::compile()) return false;
 
-    
-    std::vector<std::pair<int,int> >& p = focals_;
+
     for (uint i = 0; i < laplacians_.size(); i++){
         petsc_error_ = MatDestroy(laplacians_[i]); ERROR1(petsc_error_);
         petsc_error_ = VecDestroy(current_flow_[i]); ERROR1(petsc_error_);
@@ -52,7 +62,7 @@ bool SolverPetsc::compile() {
     voltages_.clear();
     edge2positions_ = std::vector< std::vector<edge_pos> >(nbEdges());
     
-    PetscInitialize(&argc,&argv,(char*)0,"PETSc");
+    PetscInitialize(&petsc_options_count_,&petsc_options_,(char*)0,"PETSc");
     PetscMPIInt size;
 
     petsc_error_ = MPI_Comm_size(PETSC_COMM_WORLD,&size);
@@ -63,7 +73,7 @@ bool SolverPetsc::compile() {
 
     
     int n = nbNodes();
-    int dim = mode_ == kOneMatrixPerPair ? n-1 : (n-1) * p.size();
+    int dim = mode_ == kOneMatrixPerPair ? n-1 : (n-1) * focals_.size();
     Mat* lap1 = new Mat();
     Vec* iflow1 = new Vec();
     Vec* volt1 = new Vec();
@@ -82,9 +92,9 @@ bool SolverPetsc::compile() {
     laplacians_.push_back(lap1);
     current_flow_.push_back(iflow1);
     voltages_.push_back(volt1);
-    for (uint i = 0; i < p.size(); i++) {
-        int s = p[i].first;
-        int t = p[i].second;
+    for (uint i = 0; i < focals_.size(); i++) {
+        int s = focals_[i].first;
+        int t = focals_[i].second;
         int matrix_id = i;
         if (s == t)
             continue;

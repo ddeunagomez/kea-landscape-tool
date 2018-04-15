@@ -17,7 +17,7 @@ int main(int argc, char* argv[]) {
     std::cout<< "=== Kea Landscape Tool ==="<<std::endl;
     srand(time(NULL));
 
-    std::vector<std::pair<int,int> > p;
+    std::vector<std::pair<ElectricalCircuit::NodeID,ElectricalCircuit::NodeID> > p;
     //p.push_back(std::make_pair(89,1030));
     p.push_back(std::make_pair(0,10));
     //p.push_back(std::make_pair(4,15));

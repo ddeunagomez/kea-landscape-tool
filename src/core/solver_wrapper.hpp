@@ -17,8 +17,8 @@ class Solver : public ElectricalCircuit {
 public:
     enum MultifocalMatrixMode {kOneMatrixAllPairs, kOneMatrixPerPair};
 protected:
-    std::vector<std::pair<int,int> > focals_;
-    std::unordered_set<int> focal_nodes_;
+    std::vector<std::pair<NodeID,NodeID> > focals_;
+    std::unordered_set<NodeID> focal_nodes_;
     MultifocalMatrixMode mode_;
 
     bool isFocal(NodeID n) const {
@@ -27,7 +27,24 @@ protected:
 
 public:
     //Electrical circuit and pairs of focals
-    Solver(std::vector<std::pair<int,int> >& p, MultifocalMatrixMode m = MultifocalMatrixMode::kOneMatrixPerPair) :
+    Solver(const std::vector<NodeID>& p, MultifocalMatrixMode m = MultifocalMatrixMode::kOneMatrixPerPair) :
+        focals_(), mode_(m) {
+
+        std::vector<std::pair<NodeID,NodeID> > pairs;
+        for (int i = 0; i < p.size(); i++) {
+            for (int j = i + 1; j < p.size(); j++) {
+                pairs.push_back(std::make_pair(p[i],p[j]));
+            }
+        }
+        focals_ = pairs;
+
+        for (auto pair : focals_) {
+            focal_nodes_.insert(pair.first);
+            focal_nodes_.insert(pair.second);
+        }
+    }
+
+    Solver(const std::vector<std::pair<NodeID,NodeID> >& p, MultifocalMatrixMode m = MultifocalMatrixMode::kOneMatrixPerPair) :
         focals_(p), mode_(m) {
 
         for (auto pair : focals_) {

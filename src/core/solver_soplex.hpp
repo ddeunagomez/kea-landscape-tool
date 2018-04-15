@@ -24,7 +24,7 @@ private:
     std::unordered_map<ElectricalCircuit::EdgeID, std::vector<RowColumn> > edge_positions_;
 public:
 
-    SolverSoplex(std::vector<std::pair<int,int> >& p, MultifocalMatrixMode m = kOneMatrixPerPair);
+    SolverSoplex(const std::vector<std::pair<NodeID, NodeID> > &p, MultifocalMatrixMode m = kOneMatrixPerPair);
     ~SolverSoplex();
 
     bool compile();

@@ -20,7 +20,7 @@ private:
     Solution base_solution_;
     Solution initial_solution_;
     
-    std::vector<std::pair<int,int> > focals_;
+    std::vector<std::pair<ElectricalCircuit::NodeID,ElectricalCircuit::NodeID> > focals_;
 
     Solver* solver_;
     PricingManager* pricing_manager_;
@@ -47,7 +47,7 @@ private:
     void fillSolution(Solution &solution);
     
 public:
-    LocalSearchEngine(std::vector<std::pair<int,int> > p,
+    LocalSearchEngine(std::vector<std::pair<ElectricalCircuit::NodeID, ElectricalCircuit::NodeID> > p,
                       Solver* _s, PricingManager* _pm, Accepter* _acc);
 
     virtual ~LocalSearchEngine();

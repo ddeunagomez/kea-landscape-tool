@@ -7,7 +7,7 @@
 
 using namespace arma;
 
-SolverArmadillo::SolverArmadillo(std::vector<std::pair<int,int> >& p,
+SolverArmadillo::SolverArmadillo(const std::vector<std::pair<NodeID, NodeID> > &p,
                              MultifocalMatrixMode m) : Solver(p,m) {
 
    
@@ -20,20 +20,19 @@ SolverArmadillo::~SolverArmadillo() {
 bool SolverArmadillo::compile() {
     if(!Solver::compile()) return false;
 
-    
-    std::vector<std::pair<int,int> >& p = focals_;
+
     laplacians_.clear();
     current_flow_.clear();
     voltages_.clear();
 
     int n = nbNodes();
-    int dim = mode_ == kOneMatrixPerPair ? n-1 : (n-1) * p.size();
+    int dim = mode_ == kOneMatrixPerPair ? n-1 : (n-1) * focals_.size();
     laplacians_.push_back(sp_mat(dim,dim));
     current_flow_.push_back(zeros<vec>(dim));
     voltages_.push_back(vec(dim));
-    for (uint i = 0; i < p.size(); i++) {
-        int s = p[i].first;
-        int t = p[i].second;
+    for (uint i = 0; i < focals_.size(); i++) {
+        int s = focals_[i].first;
+        int t = focals_[i].second;
         if (s == t)
             continue;
         if (i > 0 && mode_ == kOneMatrixPerPair) {

@@ -8,7 +8,7 @@ using namespace soplex;
 
 #define DEBUG 1
 
-SolverSoplex::SolverSoplex(std::vector<std::pair<int,int> >& p,
+SolverSoplex::SolverSoplex(const std::vector<std::pair<NodeID, NodeID> > &p,
                        MultifocalMatrixMode m) :
     Solver(p,m) {
 }
@@ -19,19 +19,17 @@ SolverSoplex::~SolverSoplex() {
 
 bool SolverSoplex::compile() {
     if(!Solver::compile()) return false;
-    std::vector<std::pair<int,int> >& p = focals_;
-    assert(p.size());
+    assert(focals_.size());
     soplex_solvers_.clear();
-    SoPlex s;
     soplex_solvers_.push_back(SoPlex());
-    for (uint i = 0; i < p.size(); i++) {
+    for (uint i = 0; i < focals_.size(); i++) {
         if (i > 0 && mode_ == kOneMatrixPerPair)
             soplex_solvers_.push_back(SoPlex());
 
         SoPlex& sp = soplex_solvers_.back();
         sp.setIntParam(SoPlex::VERBOSITY, SoPlex::VERBOSITY_ERROR);
-        int s = p[i].first;
-        int t = p[i].second;
+        int s = focals_[i].first;
+        int t = focals_[i].second;
 
         int rshift = sp.numRowsReal();
         int cshift = mode_ == kOneMatrixAllPairs ? i*nbNodes() : sp.numColsReal();
@@ -41,7 +39,7 @@ bool SolverSoplex::compile() {
         
         for (int j = 0; j < nbNodes(); j++) {
             DSVector row;
-            row.add(nbNodes()*(mode_==kOneMatrixAllPairs ? p.size() : 1) - 1,0);
+            row.add(nbNodes()*(mode_==kOneMatrixAllPairs ? focals_.size() : 1) - 1,0);
             //std::cout<<"Adding row of size "<< (nbNodes()-1)*(m==UNIQUE ? p.size() : 1)<<std::endl;
             sp.addRowReal(LPRow(row, LPRowReal::EQUAL, j == s ? 1.0 : 0.0));
         }

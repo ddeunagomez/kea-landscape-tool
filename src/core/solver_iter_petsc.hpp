@@ -16,8 +16,8 @@ class SolverPetsc : public Solver {
 
 private:
     //Argument options
-    int argc;
-    char** argv;
+    int petsc_options_count_;
+    char** petsc_options_;
     
     std::vector<Mat*> laplacians_;
     std::vector<Vec*> current_flow_;
@@ -34,8 +34,10 @@ private:
     std::vector< std::vector<edge_pos> > edge2positions_;
 public:
 
-    SolverPetsc(std::vector<std::pair<int,int> >& p,
-                int* argc, char*** argv, MultifocalMatrixMode mode_ = Solver::kOneMatrixPerPair);
+    SolverPetsc(const std::vector<NodeID>& p,
+                int* petsc_options_count, char*** petsc_options, MultifocalMatrixMode mode_ = Solver::kOneMatrixPerPair);
+    SolverPetsc(const std::vector<std::pair<NodeID,NodeID> >& p,
+                int* petsc_options_count, char*** petsc_options, MultifocalMatrixMode mode_ = Solver::kOneMatrixPerPair);
     ~SolverPetsc();
 
     bool compile();

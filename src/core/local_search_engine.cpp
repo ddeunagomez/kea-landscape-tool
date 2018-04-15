@@ -7,7 +7,7 @@ const double LocalSearchEngine::DEFAULT_ALT = 1;
 const int LocalSearchEngine::DEFAULT_ITERS = 50;
 const float LocalSearchEngine::DEFAULT_TLIMIT = 200.0;
 
-LocalSearchEngine::LocalSearchEngine(std::vector<std::pair<int,int> > p,
+LocalSearchEngine::LocalSearchEngine(std::vector<std::pair<ElectricalCircuit::NodeID,ElectricalCircuit::NodeID> > p,
                                      Solver* _s, PricingManager* _pm,
                                      Accepter* _acc)
     : focals_(p),solver_(_s),pricing_manager_(_pm),accepter_(_acc),
@@ -71,7 +71,8 @@ Solution LocalSearchEngine::solve(JsonObject *solution_collector) {
         throw std::runtime_error("findInitialSolution must be called before"
                                  " calling solve!");
     }
-    int iter = -1;
+    int iterations = -1;
+    int solutions = 0;
     Solution current = initial_solution_;
     Solution accepted = initial_solution_;
     Solution best = initial_solution_;
@@ -80,10 +81,10 @@ Solution LocalSearchEngine::solve(JsonObject *solution_collector) {
    
     std::clock_t begin_time = clock();
 
-    while (iter < iterations_ &&
+    while (iterations < iterations_ &&
            float(clock() - begin_time)/CLOCKS_PER_SEC < time_limit_) {
-        iter++;
-        std::cout<<"Solve iteration "<< iter <<std::endl;
+        iterations++;
+        std::cout<<"Solve iteration "<< iterations <<std::endl;
         std::vector<id_val> updates;
         //Destroy accepted solution
         Destroyer des(this,pricing_manager_,Destroyer::kRandomRemove,Destroyer::kRandomAdd,5);
@@ -92,10 +93,11 @@ Solution LocalSearchEngine::solve(JsonObject *solution_collector) {
         solver_->updateConductances(updates);
         solver_->solve();
         std::cout<<"Solved "<< std::endl;
+        solutions++;
         fillSolution(current);
         if (solution_collector) {
             JsonObject* solution = current.toJson();
-            solution_collector->add("solution",solution);
+            solution_collector->add("solution_"+std::to_string(solutions - 1),solution);
         }
         if (current.objective_ < best.objective_) {
             best = current;
@@ -105,7 +107,9 @@ Solution LocalSearchEngine::solve(JsonObject *solution_collector) {
         }
         
     }
-
+    if (solution_collector) {
+        solution_collector->add("solutions_count",new JsonInt(solutions));
+    }
     return best;
 
     

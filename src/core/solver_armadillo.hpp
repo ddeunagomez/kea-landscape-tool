@@ -22,7 +22,7 @@ private:
 
 public:
 
-    SolverArmadillo(std::vector<std::pair<int,int> >& p, MultifocalMatrixMode mode_ = kOneMatrixPerPair);
+    SolverArmadillo(const std::vector<std::pair<NodeID, NodeID> > &p, MultifocalMatrixMode mode_ = kOneMatrixPerPair);
     ~SolverArmadillo();
 
     bool compile();
