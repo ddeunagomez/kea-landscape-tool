@@ -1,6 +1,7 @@
 #ifndef _SOLVER_ITER_PETSC_HPP_
 #define _SOLVER_ITER_PETSC_HPP_
 
+#define SOLVER_USE_PETSC
 #ifdef SOLVER_USE_PETSC
 
 
@@ -11,7 +12,7 @@
 /*
  * Solver using PEtSC in iterative methods.
  */
-class SolvItPETSc : public Solver {
+class SolverPetsc : public Solver {
 
 private:
     //Argument options
@@ -21,7 +22,6 @@ private:
     std::vector<Mat*> laplacians_;
     std::vector<Vec*> current_flow_;
     std::vector<Vec*> voltages_;
-    Mode mode_;
     PetscErrorCode petsc_error_;
     
     typedef struct edge_pos {
@@ -34,9 +34,9 @@ private:
     std::vector< std::vector<edge_pos> > edge2positions_;
 public:
 
-    SolvItPETSc(std::vector<std::pair<int,int> >& p,
-                int* argc, char*** argv, Mode mode_ = Solver::MULTI);
-    ~SolvItPETSc();
+    SolverPetsc(std::vector<std::pair<int,int> >& p,
+                int* argc, char*** argv, MultifocalMatrixMode mode_ = Solver::kOneMatrixPerPair);
+    ~SolverPetsc();
 
     bool compile();
 

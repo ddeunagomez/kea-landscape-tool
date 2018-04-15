@@ -14,18 +14,18 @@ class Solution {
 private:
     std::unordered_map<int,int> chosen_alternative_;
 public:
-    void choose(int e, int alt) {
+    inline void choose(int e, int alt) {
         chosen_alternative_[e] = alt;
     }
-    bool chosen(int e) {
+    inline bool chosen(int e) {
         if (chosen_alternative_.find(e) == chosen_alternative_.end())
             chosen_alternative_[e] = 0;
         return chosen_alternative_[e] != 0;
     }
-    void discard(int e) {
+    inline void discard(int e) {
         chosen_alternative_[e] = 0;
     }
-    bool isSet() {
+    inline bool isSet() {
         return node_currents_.size() && edge_currents_.size() && voltages_.size();
     }
 
@@ -42,41 +42,9 @@ public:
         return chosen_alternative_ == s2.chosen_alternative_;
     }
 
-    void print(std::ostream& o, int level = 1) {
-        o <<"R = "<<std::fixed<<std::setprecision(10)<<objective_<<"\n";
-        if (level < 1) return;
-        int i = 0;
-        o <<"Sol = [";
-        for (auto it = chosen_alternative_.begin(); it != chosen_alternative_.end(); ++it) {
-            if (it->second != 0) {
-                o<<it->first<<",";
-                i++;
-            }
-        }
-        o<<"]"<<i<<"\n";
-        if (level < 2) return;
-        o <<"Vn = [";
-        for (uint j = 0; j < voltages_.size(); j++) {
-            for (uint i = 0; i < voltages_[j].size(); i++) {
-                o<<"("<<voltages_[j][i].id<<","<<voltages_[j][i].val<<"),";
-            }
-            if (j < voltages_.size() - 1)
-                o<<"\n      ";
-        }
-        o<<"]\n";
-        if (level < 3) return;
-        o <<"Cn = [";
-        for (uint i = 0; i < node_currents_.size(); i++) {
-            o<<"("<<node_currents_[i].id<<","<<node_currents_[i].val<<"),";
-        }
-        o<<"]\n";
-        if (level < 4) return;
-        o <<"Ce = [";
-        for (uint i = 0; i < edge_currents_.size(); i++) {
-            o<<"("<<edge_currents_[i].id<<","<<edge_currents_[i].val<<"),";
-        }
-        o<<"]\n";
-    }
+    void print(std::ostream& o, int level = 1);
+    std::string json();
+
 };
 
 #endif // SOLUTION_H

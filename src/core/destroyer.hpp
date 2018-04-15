@@ -1,7 +1,7 @@
 #ifndef DESTROYER_H
 #define DESTROYER_H
 
-#include "ecircuit.hpp"
+#include "electrical_circuit.hpp"
 #include "local_search_engine.hpp"
 
 class Destroyer {

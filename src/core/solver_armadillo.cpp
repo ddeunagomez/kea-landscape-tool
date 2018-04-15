@@ -1,3 +1,4 @@
+#define SOLVER_USE_ARMADILLO
 #ifdef SOLVER_USE_ARMADILLO
 
 #include "solver_armadillo.hpp"
@@ -6,27 +7,27 @@
 
 using namespace arma;
 
-SolvArmadillo::SolvArmadillo(std::vector<std::pair<int,int> >& p,
-                             Mode m) : Solver(p), mode_(m) {
+SolverArmadillo::SolverArmadillo(std::vector<std::pair<int,int> >& p,
+                             MultifocalMatrixMode m) : Solver(p,m) {
 
    
 }
 
-SolvArmadillo::~SolvArmadillo() {
+SolverArmadillo::~SolverArmadillo() {
 
 }
 
-bool SolvArmadillo::compile() {
+bool SolverArmadillo::compile() {
     if(!Solver::compile()) return false;
 
     
-    std::vector<std::pair<int,int> >& p = focals;
+    std::vector<std::pair<int,int> >& p = focals_;
     laplacians_.clear();
     current_flow_.clear();
     voltages_.clear();
 
     int n = nbNodes();
-    int dim = mode_ == MULTI ? n-1 : (n-1) * p.size();
+    int dim = mode_ == kOneMatrixPerPair ? n-1 : (n-1) * p.size();
     laplacians_.push_back(sp_mat(dim,dim));
     current_flow_.push_back(zeros<vec>(dim));
     voltages_.push_back(vec(dim));
@@ -35,15 +36,15 @@ bool SolvArmadillo::compile() {
         int t = p[i].second;
         if (s == t)
             continue;
-        if (i > 0 && mode_ == MULTI) {
+        if (i > 0 && mode_ == kOneMatrixPerPair) {
             laplacians_.push_back(sp_mat(n - 1,n - 1));
             current_flow_.push_back(zeros<vec>(n - 1));
             voltages_.push_back(vec(n - 1));
         }
         sp_mat& lap = laplacians_.back();
 
-        int rshift = mode_ == UNIQUE ? i*(n-1) : 0;
-        int cshift = mode_ == UNIQUE ? i*(n-1) : 0;
+        int rshift = mode_ == kOneMatrixAllPairs ? i*(n-1) : 0;
+        int cshift = mode_ == kOneMatrixAllPairs ? i*(n-1) : 0;
 
         if (s < t)
             current_flow_.back()[rshift+s] = 1;
@@ -73,7 +74,7 @@ bool SolvArmadillo::compile() {
                 rj = j - 1;
             double s = 0;
             for (int k = 0; k < nbEdges(j); k++) {
-                ECircuit::EdgeID e = getEdgeFrom(j,k);
+                ElectricalCircuit::EdgeID e = getEdgeFrom(j,k);
                 s += getConductance(e);
             }
             //std::cout<<"Diag ("<<rshift+rj<<","<<cshift+rj<<")"<<std::endl;
@@ -91,7 +92,7 @@ bool SolvArmadillo::compile() {
 }
 
 
-bool SolvArmadillo::solve() {
+bool SolverArmadillo::solve() {
     for (uint i = 0; i < laplacians_.size(); i++) {
         voltages_[i] = spsolve(laplacians_[i],current_flow_[i],"lapack");
     }
@@ -100,19 +101,19 @@ bool SolvArmadillo::solve() {
 
 
 //Voltages indexed by node ids
-void SolvArmadillo::getVoltages(std::vector< std::vector<id_val> >& each,
+void SolverArmadillo::getVoltages(std::vector< std::vector<id_val> >& each,
                                 std::vector<id_val>& all) {
     all = std::vector<id_val>(nbNodes());
-    each = std::vector< std::vector<id_val> >(focals.size(),
+    each = std::vector< std::vector<id_val> >(focals_.size(),
                                std::vector<id_val>(nbNodes()));
 
-    for (uint i = 0; i < focals.size(); i++) {
-        int s = focals[i].first;
-        int t = focals[i].second;
+    for (uint i = 0; i < focals_.size(); i++) {
+        int s = focals_[i].first;
+        int t = focals_[i].second;
         if (s == t)
             continue;
         vec& vi = voltages_[0];
-        if (mode_ == MULTI)
+        if (mode_ == kOneMatrixPerPair)
             vi = voltages_[i];
         for (int j = 0; j < nbNodes(); j++) {
             all[j].id = j;
@@ -123,8 +124,9 @@ void SolvArmadillo::getVoltages(std::vector< std::vector<id_val> >& each,
                 idx = j - 1;
             else 
                 idx = j;
-            if (mode_ == UNIQUE)
+            if (mode_ == kOneMatrixAllPairs)
                 idx += (nbNodes() - 1)*i;
+
             all[j].val += vi[idx];
             each[i][j].val += vi[idx];
         }

@@ -1,3 +1,4 @@
+#define SOLVER_USE_PETSC
 #ifdef SOLVER_USE_PETSC
 
 #include "solver_iter_petsc.hpp"
@@ -16,9 +17,9 @@
         } } while(0)
 #define ERROR1(c) ERROR(c,"PETSc error: ")
 
-SolvItPETSc::SolvItPETSc(std::vector<std::pair<int,int> >& p,
+SolverPetsc::SolverPetsc(std::vector<std::pair<int,int> >& p,
                          int* _argc, char*** _argv,
-                         Mode m) : Solver(p), mode_(m) {
+                         MultifocalMatrixMode m) : Solver(p,m) {
     argc = *_argc;
     argv = new char*[argc];
     for (int i = 0; i < argc; i++) {
@@ -28,7 +29,7 @@ SolvItPETSc::SolvItPETSc(std::vector<std::pair<int,int> >& p,
 
 }
 
-SolvItPETSc::~SolvItPETSc() {
+SolverPetsc::~SolverPetsc() {
     for (uint i = 0; i < laplacians_.size(); i++){
         petsc_error_ = MatDestroy(laplacians_[i]); ERROR1(petsc_error_);
         petsc_error_ = VecDestroy(current_flow_[i]); ERROR1(petsc_error_);
@@ -36,11 +37,11 @@ SolvItPETSc::~SolvItPETSc() {
     }
 }
 
-bool SolvItPETSc::compile() {
+bool SolverPetsc::compile() {
     if(!Solver::compile()) return false;
 
     
-    std::vector<std::pair<int,int> >& p = focals;
+    std::vector<std::pair<int,int> >& p = focals_;
     for (uint i = 0; i < laplacians_.size(); i++){
         petsc_error_ = MatDestroy(laplacians_[i]); ERROR1(petsc_error_);
         petsc_error_ = VecDestroy(current_flow_[i]); ERROR1(petsc_error_);
@@ -62,7 +63,7 @@ bool SolvItPETSc::compile() {
 
     
     int n = nbNodes();
-    int dim = mode_ == MULTI ? n-1 : (n-1) * p.size();
+    int dim = mode_ == kOneMatrixPerPair ? n-1 : (n-1) * p.size();
     Mat* lap1 = new Mat();
     Vec* iflow1 = new Vec();
     Vec* volt1 = new Vec();
@@ -87,7 +88,7 @@ bool SolvItPETSc::compile() {
         int matrix_id = i;
         if (s == t)
             continue;
-        if (i > 0 && mode_ == MULTI) {
+        if (i > 0 && mode_ == kOneMatrixPerPair) {
             Mat* lap1 = new Mat();
             Vec* iflow1 = new Vec();
             Vec* volt1 = new Vec();
@@ -107,13 +108,13 @@ bool SolvItPETSc::compile() {
             current_flow_.push_back(iflow1);
             voltages_.push_back(volt1);
         }
-        if (mode_ == UNIQUE)
+        if (mode_ == kOneMatrixAllPairs)
             matrix_id = 0;
         Mat* lap = laplacians_.back();
         petsc_error_ = MatAssemblyBegin(*lap,MAT_FINAL_ASSEMBLY);ERROR1(petsc_error_);
         Vec* ifl = current_flow_.back();
-        int rshift = mode_ == UNIQUE ? i*(n-1) : 0;
-        int cshift = mode_ == UNIQUE ? i*(n-1) : 0;
+        int rshift = mode_ == kOneMatrixAllPairs ? i*(n-1) : 0;
+        int cshift = mode_ == kOneMatrixAllPairs ? i*(n-1) : 0;
 
         if (s < t) {
             petsc_error_ = VecSetValue(*ifl,rshift+s,1,INSERT_VALUES);ERROR1(petsc_error_);
@@ -149,14 +150,14 @@ bool SolvItPETSc::compile() {
             int row = rshift+rj;
             int col = cshift+rj;
             for (int k = 0; k < nbEdges(j); k++) {
-                ECircuit::EdgeID e = getEdgeFrom(j,k);
+                ElectricalCircuit::EdgeID e = getEdgeFrom(j,k);
                 s += getConductance(e);
                 edge2positions_[e].push_back({matrix_id,row, col});
             }
             petsc_error_ = MatSetValues(*lap,1,&row,1,&col,&s,INSERT_VALUES);ERROR1(petsc_error_);
         }
         petsc_error_ = MatAssemblyEnd(*lap,MAT_FINAL_ASSEMBLY);ERROR1(petsc_error_);
-        /*
+        //*
         printf("LAP:\n");
         petsc_error_ = MatView(*lap,PETSC_VIEWER_STDOUT_WORLD); ERROR1(petsc_error_);
         printf("FLOW:\n");
@@ -166,7 +167,7 @@ bool SolvItPETSc::compile() {
     return true;
 }
 
-void SolvItPETSc::updateConductances(std::vector<id_val>& ev) {
+void SolverPetsc::updateConductances(std::vector<id_val>& ev) {
 
     for (uint i = 0; i < laplacians_.size(); i++) {
         petsc_error_ = MatAssemblyBegin(*(laplacians_[i]),MAT_FINAL_ASSEMBLY);ERROR1(petsc_error_);
@@ -198,7 +199,7 @@ void SolvItPETSc::updateConductances(std::vector<id_val>& ev) {
     }
     
 }
-bool SolvItPETSc::solve() {
+bool SolverPetsc::solve() {
     for (uint i = 0; i < laplacians_.size(); i++) {
         KSP ksp;         /* linear solver context */
         PC  pc;          /* preconditioner context */
@@ -221,20 +222,20 @@ bool SolvItPETSc::solve() {
 
 
 //Voltages indexed by node ids
-void SolvItPETSc::getVoltages(std::vector< std::vector<id_val> >& each,
+void SolverPetsc::getVoltages(std::vector< std::vector<id_val> >& each,
                               std::vector<id_val>& all) {
-    all = std::vector<id_val>(nbNodes());
-    each = std::vector< std::vector<id_val> >(focals.size(),
-                                              std::vector<id_val>(nbNodes()));
+    all = std::vector<id_val>(nbNodes(),0);
+    each = std::vector< std::vector<id_val> >(focals_.size(),
+                                              std::vector<id_val>(nbNodes(),0));
 
-    for (uint i = 0; i < focals.size(); i++) {
-        int s = focals[i].first;
-        int t = focals[i].second;
+    for (uint i = 0; i < focals_.size(); i++) {
+        int s = focals_[i].first;
+        int t = focals_[i].second;
         if (s == t)
             continue;
 
         Vec* vi = NULL;
-        if (mode_ == MULTI)
+        if (mode_ == kOneMatrixPerPair)
             vi = voltages_[i];
         else
             vi = voltages_[0];
@@ -247,7 +248,7 @@ void SolvItPETSc::getVoltages(std::vector< std::vector<id_val> >& each,
                 idx = j - 1;
             else
                 idx = j;
-            if (mode_ == UNIQUE)
+            if (mode_ == kOneMatrixAllPairs)
                 idx += (nbNodes() - 1)*i;
             double tmp;
             petsc_error_ = VecGetValues(*vi,1,&idx,&tmp);ERROR1(petsc_error_);
@@ -259,7 +260,7 @@ void SolvItPETSc::getVoltages(std::vector< std::vector<id_val> >& each,
     
 }
 
-void SolvItPETSc::getCurrents(std::vector<id_val>& c_n,
+void SolverPetsc::getCurrents(std::vector<id_val>& c_n,
                               std::vector<id_val>& c_e) {
 
     std::vector<id_val> vs;
@@ -273,7 +274,7 @@ void SolvItPETSc::getCurrents(std::vector<id_val>& c_n,
         int u = uv.first;
         int v = uv.second;
         c_e[e].id = e;
-        c_e[e].val = fabs(vs[u].val - vs[v].val)/getConductance(e);
+        c_e[e].val = fabs(vs[v].val - vs[u].val)/getConductance(e);
         c_n[u].id = u;
         c_n[u].val += c_e[e].val/2.0;
         c_n[v].id = v;

@@ -1,6 +1,6 @@
 #ifndef _SOLVER_SOPLEX_HPP_
 #define _SOLVER_SOPLEX_HPP_
-
+#define SOLVER_USE_SOPLEX
 #ifdef SOLVER_USE_SOPLEX
 
 
@@ -13,7 +13,7 @@
  * I'll try to put all in one unique instance, and see which is faster:
  * plenty of small probems, or one big problem.
  */
-class SolvSoplex : public Solver {
+class SolverSoplex : public Solver {
 
 private:
     struct RowColumn {
@@ -21,12 +21,11 @@ private:
         int col;
     };
     std::vector<soplex::SoPlex> soplex_solvers_;
-    std::unordered_map<ECircuit::EdgeID, std::vector<RowColumn> > edge_positions_;
-    Mode mode_;
+    std::unordered_map<ElectricalCircuit::EdgeID, std::vector<RowColumn> > edge_positions_;
 public:
 
-    SolvSoplex(std::vector<std::pair<int,int> >& p, Mode mode_ = MULTI);
-    ~SolvSoplex();
+    SolverSoplex(std::vector<std::pair<int,int> >& p, MultifocalMatrixMode m = kOneMatrixPerPair);
+    ~SolverSoplex();
 
     bool compile();
     

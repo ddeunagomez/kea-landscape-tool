@@ -1,20 +1,20 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include "ecircuit.hpp"
+#include "electrical_circuit.hpp"
 #include "utils.hpp"
 
 using namespace std;
 
-ECircuit::ECircuit() {
+ElectricalCircuit::ElectricalCircuit() {
 
 }
 
-ECircuit::~ECircuit() {
+ElectricalCircuit::~ElectricalCircuit() {
 
 }
 
-ECircuit::EdgeID ECircuit::addEdge(NodeID u, NodeID v, double cond) {
+ElectricalCircuit::EdgeID ElectricalCircuit::addEdge(NodeID u, NodeID v, double cond) {
     assert(u < node_edge_map_.size());
     assert(v < node_edge_map_.size());
 
@@ -28,14 +28,14 @@ ECircuit::EdgeID ECircuit::addEdge(NodeID u, NodeID v, double cond) {
     return e;
 }
 
-ECircuit::NodeID ECircuit::addNode() {
+ElectricalCircuit::NodeID ElectricalCircuit::addNode() {
     int n = node_edge_map_.size();
     node_edge_map_.push_back(vector<EdgeID>());
     return n;
 }
 
 
-bool ECircuit::parseTextListFile(std::string fname) {
+bool ElectricalCircuit::parseTextListFile(std::string fname) {
     if (!file_exists(fname)) {
         cerr<<"File "<<fname<<" does not exist."<<endl;
         return false;
@@ -72,14 +72,14 @@ bool ECircuit::parseTextListFile(std::string fname) {
         int a, b;
         double c;
         iss >> a >> b >> c;
-        this->addEdge(a,b,c);
+        this->addEdge(a,b,1.0/c);
     }
 
     return true;
     
 }
 
-void ECircuit::printECircuit() {
+void ElectricalCircuit::printECircuit() {
     cout<<"{|"<<endl;
     cout<<"Nodes: "<< node_edge_map_.size()<<endl;
     cout<<"Edges: "<< edges_.size()<<endl;

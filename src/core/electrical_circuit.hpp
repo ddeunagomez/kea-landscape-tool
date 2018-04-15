@@ -5,7 +5,7 @@
 #include <vector>
 #include <string>
 
-class ECircuit {
+class ElectricalCircuit {
 public:
     typedef unsigned int EdgeID;
     typedef unsigned int NodeID;
@@ -18,8 +18,8 @@ private:
     
 public:
     
-    ECircuit();
-    ~ECircuit();
+    ElectricalCircuit();
+    ~ElectricalCircuit();
 
     //Returns the id of the new edge between u and v
     EdgeID addEdge(NodeID u, NodeID v, double cond = 0.0);

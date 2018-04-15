@@ -4,7 +4,7 @@
 #include <stdlib.h>
 
 #include "utils.hpp"
-#include "ecircuit.hpp"
+#include "electrical_circuit.hpp"
 #include "solver_soplex.hpp"
 #include "solver_armadillo.hpp"
 #include "solver_iter_petsc.hpp"

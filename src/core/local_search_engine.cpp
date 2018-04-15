@@ -94,6 +94,7 @@ void LocalSearchEngine::solve() {
         std::cout<<"Solved "<< std::endl;
         fillSolution(current);
         current.print(std::cout,1);
+        std::cout<<current.json()<<std::endl;
         if (current.objective_ < best.objective_) {
             best = current;
         }

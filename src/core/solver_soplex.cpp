@@ -1,3 +1,4 @@
+#define SOLVER_USE_SOPLEX
 #ifdef SOLVER_USE_SOPLEX
 
 #include "solver_soplex.hpp"
@@ -7,24 +8,24 @@ using namespace soplex;
 
 #define DEBUG 1
 
-SolvSoplex::SolvSoplex(std::vector<std::pair<int,int> >& p,
-                       Mode _m) :
-    Solver(p), mode_(_m) {
+SolverSoplex::SolverSoplex(std::vector<std::pair<int,int> >& p,
+                       MultifocalMatrixMode m) :
+    Solver(p,m) {
 }
 
-SolvSoplex::~SolvSoplex() {
+SolverSoplex::~SolverSoplex() {
 
 };
 
-bool SolvSoplex::compile() {
+bool SolverSoplex::compile() {
     if(!Solver::compile()) return false;
-    std::vector<std::pair<int,int> >& p = focals;
+    std::vector<std::pair<int,int> >& p = focals_;
     assert(p.size());
     soplex_solvers_.clear();
     SoPlex s;
     soplex_solvers_.push_back(SoPlex());
     for (uint i = 0; i < p.size(); i++) {
-        if (i > 0 && mode_ == MULTI)
+        if (i > 0 && mode_ == kOneMatrixPerPair)
             soplex_solvers_.push_back(SoPlex());
 
         SoPlex& sp = soplex_solvers_.back();
@@ -33,14 +34,14 @@ bool SolvSoplex::compile() {
         int t = p[i].second;
 
         int rshift = sp.numRowsReal();
-        int cshift = mode_ == UNIQUE ? i*nbNodes() : sp.numColsReal();
+        int cshift = mode_ == kOneMatrixAllPairs ? i*nbNodes() : sp.numColsReal();
 
         //std::cout<<"Num rows: "<<rshift<<std::endl;
         //std::cout<<"Num cols: "<<cshift<<std::endl;
         
         for (int j = 0; j < nbNodes(); j++) {
             DSVector row;
-            row.add(nbNodes()*(mode_==UNIQUE ? p.size() : 1) - 1,0);
+            row.add(nbNodes()*(mode_==kOneMatrixAllPairs ? p.size() : 1) - 1,0);
             //std::cout<<"Adding row of size "<< (nbNodes()-1)*(m==UNIQUE ? p.size() : 1)<<std::endl;
             sp.addRowReal(LPRow(row, LPRowReal::EQUAL, j == s ? 1.0 : 0.0));
         }
@@ -61,7 +62,7 @@ bool SolvSoplex::compile() {
             if (n == t) continue;
             double s = 0;
             for (int j = 0; j < nbEdges(n); j++) {
-                ECircuit::EdgeID e = getEdgeFrom(n,j);
+                ElectricalCircuit::EdgeID e = getEdgeFrom(n,j);
                 s += getConductance(e);
             }
             sp.changeElementReal(rshift+n, cshift+n,s);
@@ -73,7 +74,7 @@ bool SolvSoplex::compile() {
     }
 
     if (DEBUG) {
-        if (mode_ == UNIQUE)
+        if (mode_ == kOneMatrixAllPairs)
             soplex_solvers_[0].writeFileReal("initlpU.lp", NULL, NULL, NULL);
         else
             for (uint i = 0; i < soplex_solvers_.size(); i++) {
@@ -85,7 +86,7 @@ bool SolvSoplex::compile() {
 }
 
 
-bool SolvSoplex::solve() {
+bool SolverSoplex::solve() {
 
 
     for (uint i = 0; i < soplex_solvers_.size(); i++) {
@@ -98,13 +99,13 @@ bool SolvSoplex::solve() {
     return true;
 }
 
-void SolvSoplex::getVoltages(std::vector< std::vector<id_val> >& each,
+void SolverSoplex::getVoltages(std::vector< std::vector<id_val> >& each,
                              std::vector<id_val>& all) {
 
     all = std::vector<id_val>(nbNodes());
-    each = std::vector< std::vector<id_val> >(focals.size(),
+    each = std::vector< std::vector<id_val> >(focals_.size(),
                                std::vector<id_val>(nbNodes()));
-    if (mode_ == MULTI) {
+    if (mode_ == kOneMatrixPerPair) {
         for (uint i = 0; i < soplex_solvers_.size(); i++) {
             SoPlex& s = soplex_solvers_[i];
             DVector primal(s.numColsReal());
