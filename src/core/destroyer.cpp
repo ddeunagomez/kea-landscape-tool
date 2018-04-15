@@ -13,10 +13,10 @@ void Destroyer::destroy(Solution& sol,
     case kRandomRemove:
         destroyRandomEdges(sol,new_sol,model_update);
         break;
-    case kLeastCost:
+    case kLeastCurrent:
         destroyLeastCurrentEdges(sol,new_sol,model_update);
         break;
-    case kLowCostProbability:
+    case kLowCurrentProbability:
         destroyLowCurrentEdgesProb(sol,new_sol,model_update);
         break;
     default:
@@ -36,7 +36,7 @@ void Destroyer::destroy(Solution& sol,
     case kHighestCurrent:
         addHighestCurrentEdges(sol,new_sol,model_update);
         break;
-    case kHigCurrentProbability:
+    case kHighCurrentProbability:
         addHighCurrentEdgesProb(sol,new_sol,model_update);
         break;
     default:
@@ -85,7 +85,7 @@ void Destroyer::destroyRandomEdges(Solution& sol,
     std::vector<int> deck(sol.edge_currents_.size());
     std::iota(deck.begin(), deck.end(),0);
     std::random_shuffle(deck.begin(),deck.end());
-    int i = 0;
+    uint i = 0;
     while (i < sol.edge_currents_.size() && hasAvailableRate()) {
         int edge = deck[i];
         if (sol.chosen(edge)) {
@@ -109,8 +109,7 @@ void Destroyer::destroyLowCurrentEdgesProb(Solution& sol,
 
 float Destroyer::getMaxCurrent(Solution& sol) {
     float max_curr = 0.0;
-    int nb_edges = sol.edge_currents_.size();
-    for (int i = 0; i < nb_edges; i++) {
+    for (uint i = 0; i < sol.edge_currents_.size(); i++) {
         max_curr = MAX(max_curr,sol.edge_currents_[i].val);
     }
     return max_curr;
@@ -124,10 +123,9 @@ void Destroyer::addHighCurrentEdgesProb(Solution& sol,
     float threshold = max_curr/(10.0*local_search_->nbFocals()); //TODO: option for this
 
     std::vector<id_val> probabilities;
-    int nb_edges = sol.edge_currents_.size();
 
     float gambling_budget = 0;
-    for (int edge = 0; edge < nb_edges; edge++) {
+    for (int edge = 0; edge < sol.edge_currents_.size(); edge++) {
         if(sol.edge_currents_[edge].val < threshold)
             continue;
         if (!local_search_->worthInvest(edge))
@@ -143,11 +141,11 @@ void Destroyer::addHighCurrentEdgesProb(Solution& sol,
 
     //I can buy more than I selected
     if (gambling_budget < pricing_manager_->budgetLeft()){
-        std::vector<int> deck(nb_edges);
+        std::vector<int> deck(sol.edge_currents_.size());
         std::iota(deck.begin(), deck.end(),0);
         std::random_shuffle(deck.begin(),deck.end());
-        for (int i = 0;
-             i < nb_edges && gambling_budget <= pricing_manager_->budgetLeft();
+        for (uint i = 0;
+             i < sol.edge_currents_.size() && gambling_budget <= pricing_manager_->budgetLeft();
              i++) {
             int edge = deck[i];
             if (!local_search_->worthInvest(edge))
@@ -219,7 +217,7 @@ void Destroyer::addRandomEdges(Solution &sol, Solution &new_sol, std::vector<id_
     std::vector<int> deck(sol.edge_currents_.size());
     std::iota(deck.begin(), deck.end(),0);
     std::random_shuffle(deck.begin(),deck.end());
-    int i = 0;
+    uint i = 0;
     while(i < deck.size() && pricing_manager_->budgetLeft()) {
         int edge = deck[i];
         if (local_search_->worthInvest(edge) &&

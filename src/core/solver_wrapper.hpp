@@ -13,6 +13,9 @@
  * clever as soplex or cplex, just needs to solve a system of equations
  * Using soplex at the moment in case I want to test LNS instead of LS
  */
+
+enum AvailableSolvers {kSoplex, kArmadillo, kPetSc};
+
 class Solver : public ElectricalCircuit {
 public:
     enum MultifocalMatrixMode {kOneMatrixAllPairs, kOneMatrixPerPair};
@@ -26,24 +29,6 @@ protected:
     }
 
 public:
-    //Electrical circuit and pairs of focals
-    Solver(const std::vector<NodeID>& p, MultifocalMatrixMode m = MultifocalMatrixMode::kOneMatrixPerPair) :
-        focals_(), mode_(m) {
-
-        std::vector<std::pair<NodeID,NodeID> > pairs;
-        for (int i = 0; i < p.size(); i++) {
-            for (int j = i + 1; j < p.size(); j++) {
-                pairs.push_back(std::make_pair(p[i],p[j]));
-            }
-        }
-        focals_ = pairs;
-
-        for (auto pair : focals_) {
-            focal_nodes_.insert(pair.first);
-            focal_nodes_.insert(pair.second);
-        }
-    }
-
     Solver(const std::vector<std::pair<NodeID,NodeID> >& p, MultifocalMatrixMode m = MultifocalMatrixMode::kOneMatrixPerPair) :
         focals_(p), mode_(m) {
 

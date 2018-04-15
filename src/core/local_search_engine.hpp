@@ -27,7 +27,7 @@ private:
     Accepter* accepter_;
     //Alternative values
     std::vector< std::vector<id_val> > alternative_conductances_;
-    static const double DEFAULT_ALT;
+    static const double kDefaultAlternative;
     double getAlternativeConductance(uint alt_id, int e) const {
         if (alt_id < alternative_conductances_.size()) {
             if (alternative_conductances_[alt_id][e].id != e) {
@@ -36,13 +36,13 @@ private:
             }
             return alternative_conductances_[alt_id][e].val;
         }
-        return DEFAULT_ALT;            
+        return kDefaultAlternative;
     }
 
     int iterations_;
-    static const int DEFAULT_ITERS;
+    static const int kDefaultNumIterations;
     float time_limit_;
-    static const float DEFAULT_TLIMIT;
+    static const float kDefaultTimeLimit;
 
     void fillSolution(Solution &solution);
     

@@ -34,8 +34,6 @@ private:
     std::vector< std::vector<edge_pos> > edge2positions_;
 public:
 
-    SolverPetsc(const std::vector<NodeID>& p,
-                int* petsc_options_count, char*** petsc_options, MultifocalMatrixMode mode_ = Solver::kOneMatrixPerPair);
     SolverPetsc(const std::vector<std::pair<NodeID,NodeID> >& p,
                 int* petsc_options_count, char*** petsc_options, MultifocalMatrixMode mode_ = Solver::kOneMatrixPerPair);
     ~SolverPetsc();

@@ -5,6 +5,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <exception>
+#include <vector>
 
 #define MAX(a,b) ((a > b)? a :b)
 #define MIN(a,b) ((a < b)? a :b)
@@ -34,5 +35,6 @@ struct id_val { //shorthand for a pair, with nicer names
     static bool sort_by_val (id_val i, id_val j) { return (i.val < j.val); }
     static bool sort_by_id  (id_val i, id_val j) { return (i.id < j.id); }
 };
+
 
 #endif

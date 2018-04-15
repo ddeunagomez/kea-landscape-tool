@@ -52,7 +52,7 @@ JsonObject* Solution::toJson() const {
         if (it->second != 0)
             tmp.push_back(it->first);
     sort(tmp.begin(), tmp.end());
-    for (int i = 0; i < tmp.size(); i++) {
+    for (uint i = 0; i < tmp.size(); i++) {
         investments->add(new JsonInt(tmp[i]));
     }
 

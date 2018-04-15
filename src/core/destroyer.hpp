@@ -6,8 +6,8 @@
 
 class Destroyer {
 public:
-    enum RemoveInvestment {kRandomRemove, kLeastCost, kLowCostProbability};
-    enum NewInvestment {kRandomAdd, kBfs, kBfsRandom, kHighestCurrent, kHigCurrentProbability};
+    enum RemoveInvestment {kRandomRemove, kLeastCurrent, kLowCurrentProbability};
+    enum NewInvestment {kRandomAdd, kBfs, kBfsRandom, kHighestCurrent, kHighCurrentProbability};
 private:
     LocalSearchEngine* local_search_;
     PricingManager* pricing_manager_;
@@ -19,7 +19,6 @@ private:
     int consumed_rate_;
     bool hasAvailableRate() {return consumed_rate_ < destruction_rate_; }
     void removeInvestment(int e) {
-        destruction_rate_--;
         pricing_manager_->save(pricing_manager_->getCost(e));
     }
 

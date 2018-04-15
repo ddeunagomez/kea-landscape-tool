@@ -21,7 +21,7 @@ public:
     }
     virtual std::string toString() const {
         std::string result = "{\n";
-        for (int i = 0; i < map_.size(); i++) {
+        for (uint i = 0; i < map_.size(); i++) {
             std::string k = map_[i].first;
             JsonObject* jo = map_[i].second;
             result += "\"" + k +"\" : ";
@@ -34,7 +34,7 @@ public:
     }
 
     virtual ~JsonObject() {
-        for (int i = 0; i < map_.size(); i++)
+        for (uint i = 0; i < map_.size(); i++)
             delete map_[i].second;
     }
 };
@@ -81,7 +81,7 @@ public:
     }
     std::string toString() const {
         std::string result = "[";
-        for (int i = 0; i < elements_.size(); i++) {
+        for (uint i = 0; i < elements_.size(); i++) {
             result += elements_[i]->toString() + (i == elements_.size() - 1 ? "" : ",");
         }
         result += "]";
@@ -89,7 +89,7 @@ public:
     }
 
     virtual ~JsonList() {
-        for (int i = 0; i < elements_.size(); i++)
+        for (uint i = 0; i < elements_.size(); i++)
             delete elements_[i];
     }
 };

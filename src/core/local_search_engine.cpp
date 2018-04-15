@@ -3,17 +3,19 @@
 #include <algorithm>
 #include <ctime>
 
-const double LocalSearchEngine::DEFAULT_ALT = 1;
-const int LocalSearchEngine::DEFAULT_ITERS = 50;
-const float LocalSearchEngine::DEFAULT_TLIMIT = 200.0;
+using namespace std;
 
-LocalSearchEngine::LocalSearchEngine(std::vector<std::pair<ElectricalCircuit::NodeID,ElectricalCircuit::NodeID> > p,
+const double LocalSearchEngine::kDefaultAlternative = 1;
+const int LocalSearchEngine::kDefaultNumIterations = 50;
+const float LocalSearchEngine::kDefaultTimeLimit = 200.0;
+
+LocalSearchEngine::LocalSearchEngine(vector<pair<ElectricalCircuit::NodeID,ElectricalCircuit::NodeID> > p,
                                      Solver* _s, PricingManager* _pm,
                                      Accepter* _acc)
     : focals_(p),solver_(_s),pricing_manager_(_pm),accepter_(_acc),
-      iterations_(DEFAULT_ITERS),time_limit_(DEFAULT_TLIMIT){
+      iterations_(kDefaultNumIterations),time_limit_(kDefaultTimeLimit){
     solver_->compile();
-    std::vector<id_val> original_alternative;
+    vector<id_val> original_alternative;
     for (int i = 0; i < solver_->nbEdges(); i++) {
         original_alternative.push_back(id_val(i,solver_->getConductance(i)));
     }
@@ -25,7 +27,7 @@ LocalSearchEngine::~LocalSearchEngine() {
 }
 
 void LocalSearchEngine::fillSolution(Solution& solution) {
-    std::vector<id_val> dummy;
+    vector<id_val> dummy;
     solver_->getVoltages(solution.voltages_,dummy);
     solver_->getCurrents(solution.node_currents_, solution.edge_currents_);
     solution.objective_ = 0.0f;
@@ -44,16 +46,16 @@ void LocalSearchEngine::findBaseSolution() {
 
 void LocalSearchEngine::findInitialSolution() {
     if (!base_solution_.isSet()) {
-        throw std::runtime_error("findBaseSolution must be called before"
+        throw runtime_error("findBaseSolution must be called before"
                                  " calling findInitialSolution!");
     }
 
-    std::sort(base_solution_.edge_currents_.begin(),
+    sort(base_solution_.edge_currents_.begin(),
               base_solution_.edge_currents_.end(),
               id_val::sort_by_val);
     pricing_manager_->reset();
 
-    std::vector<id_val> updates;
+    vector<id_val> updates;
     for (int i = solver_->nbEdges() - 1; i >= 0; i--) {
         int e = base_solution_.edge_currents_[i].id;
         if (pricing_manager_->consume(pricing_manager_->getCost(e))) {
@@ -68,7 +70,7 @@ void LocalSearchEngine::findInitialSolution() {
     
 Solution LocalSearchEngine::solve(JsonObject *solution_collector) {
     if (!initial_solution_.isSet()) {
-        throw std::runtime_error("findInitialSolution must be called before"
+        throw runtime_error("findInitialSolution must be called before"
                                  " calling solve!");
     }
     int iterations = -1;
@@ -79,25 +81,30 @@ Solution LocalSearchEngine::solve(JsonObject *solution_collector) {
     accepter_->reset(initial_solution_.objective_);
 
    
-    std::clock_t begin_time = clock();
+    clock_t begin_time = clock();
 
     while (iterations < iterations_ &&
            float(clock() - begin_time)/CLOCKS_PER_SEC < time_limit_) {
         iterations++;
-        std::cout<<"Solve iteration "<< iterations <<std::endl;
-        std::vector<id_val> updates;
+        cout<<"\tLocal Search iteration "<< iterations <<endl;
+
+        vector<id_val> updates;
         //Destroy accepted solution
-        Destroyer des(this,pricing_manager_,Destroyer::kRandomRemove,Destroyer::kRandomAdd,5);
+        Destroyer des(this,pricing_manager_,Destroyer::kLeastCurrent,Destroyer::kHighCurrentProbability,5);
+        cout<<"\tDestruction phase " <<endl;
         des.destroy(accepted,current,updates);
-        std::cout<<"Destroyed " <<std::endl;
+
         solver_->updateConductances(updates);
+        cout<<"\tSolving phase "<<endl;
         solver_->solve();
-        std::cout<<"Solved "<< std::endl;
+        cout<<"\tDone "<< endl;
         solutions++;
         fillSolution(current);
         if (solution_collector) {
             JsonObject* solution = current.toJson();
-            solution_collector->add("solution_"+std::to_string(solutions - 1),solution);
+            //cout<<solution->toString()<<endl;
+            //current.print(cout,10);
+            solution_collector->add("solution_"+to_string(solutions - 1),solution);
         }
         if (current.objective_ < best.objective_) {
             best = current;

@@ -6,7 +6,7 @@
 
 class PricingManager {
 
-    const double DEFAULT_COST = 1;
+    const double kDefaultInvestmentCost = 1;
     double budget_;
     double current_budget_;
     std::vector<id_val> costs_;
@@ -19,7 +19,7 @@ public:
 
     inline double getCost(int e) {
         if (costs_.size() == 0) {
-            return DEFAULT_COST;
+            return kDefaultInvestmentCost;
         }
         return costs_[e].val;
     }
