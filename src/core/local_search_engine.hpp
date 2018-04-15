@@ -90,7 +90,7 @@ public:
         time_limit_ = tl;
     }
     
-    void solve();
+    Solution solve(JsonObject* solution_collector = NULL);
 
     
 

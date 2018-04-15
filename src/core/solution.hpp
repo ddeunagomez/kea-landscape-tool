@@ -9,6 +9,7 @@
 #include "pricing_manager.hpp"
 #include "solver_iter_petsc.hpp"
 #include "accepter.hpp"
+#include "json.hpp"
 
 class Solution {
 private:
@@ -42,8 +43,8 @@ public:
         return chosen_alternative_ == s2.chosen_alternative_;
     }
 
-    void print(std::ostream& o, int level = 1);
-    std::string json();
+    void print(std::ostream& o, int level = 1) const;
+    JsonObject* toJson() const;
 
 };
 

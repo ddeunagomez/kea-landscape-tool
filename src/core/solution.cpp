@@ -2,7 +2,7 @@
 
 using namespace std;
 
-void Solution::print(std::ostream& o, int level) {
+void Solution::print(std::ostream& o, int level) const {
     o <<"R = "<<std::fixed<<std::setprecision(10)<<objective_<<"\n";
     if (level < 1) return;
     int i = 0;
@@ -38,41 +38,31 @@ void Solution::print(std::ostream& o, int level) {
     o<<"]\n";
 }
 
-string Solution::json() {
-    string result = "{\n";
+JsonObject* Solution::toJson() const {
+    JsonObject* jo = new JsonObject();
 
-    result += "\"nodes\" : " + to_string(node_currents_.size()) +"\n";
-    result += "\"edges\" : " + to_string(edge_currents_.size()) +"\n";
+    jo->add("nodes",new JsonInt(node_currents_.size()));
+    jo->add("edges",new JsonInt(edge_currents_.size()));
+    jo->add("resistance", new JsonFloat(objective_));
 
-    result += "\"objective\" : " + to_string(objective_) +"\n";
-
-    result += "\"investments\" : [";
-    vector<int> invest;
+    JsonList* investments = new JsonList();
+    jo->add("investments",investments);
+    vector<int> tmp;
     for (auto it = chosen_alternative_.begin(); it != chosen_alternative_.end(); ++it)
         if (it->second != 0)
-            invest.push_back(it->first);
-    sort(invest.begin(), invest.end());
-    for (int i = 0; i < invest.size(); i++) {
-        result += to_string(invest[i]) + (i == invest.size() - 1 ? "" :",");
+            tmp.push_back(it->first);
+    sort(tmp.begin(), tmp.end());
+    for (int i = 0; i < tmp.size(); i++) {
+        investments->add(new JsonInt(tmp[i]));
     }
-    result += "]\n";
 
-
-    result += "\"current_nodes\" : [";
-    sort(node_currents_.begin(),node_currents_.end(),id_val::sort_by_id);
-    for (uint i = 0; i < node_currents_.size(); i++) {
-        result += to_string(node_currents_[i].val) + (i == node_currents_.size() - 1 ? "" :",");;
+    JsonList* node_currs = new JsonList();
+    jo->add("node_currents",node_currs);
+    vector<id_val> currs = node_currents_;
+    sort(currs.begin(),currs.end(),id_val::sort_by_id);
+    for (uint i = 0; i < currs.size(); i++) {
+        node_currs->add(new JsonFloat(currs[i].val));
     }
-    result += "]\n";
 
-
-    result += "\"current_edges\" : [";
-    sort(edge_currents_.begin(),edge_currents_.end(),id_val::sort_by_id);
-    for (uint i = 0; i < edge_currents_.size(); i++) {
-        result += to_string(edge_currents_[i].val) + (i == edge_currents_.size() - 1 ? "" :",");;
-    }
-    result += "]\n";
-
-    result += "}\n";
-    return result;
+    return jo;
 }

@@ -157,7 +157,7 @@ bool SolverPetsc::compile() {
             petsc_error_ = MatSetValues(*lap,1,&row,1,&col,&s,INSERT_VALUES);ERROR1(petsc_error_);
         }
         petsc_error_ = MatAssemblyEnd(*lap,MAT_FINAL_ASSEMBLY);ERROR1(petsc_error_);
-        //*
+        /*
         printf("LAP:\n");
         petsc_error_ = MatView(*lap,PETSC_VIEWER_STDOUT_WORLD); ERROR1(petsc_error_);
         printf("FLOW:\n");
@@ -274,11 +274,20 @@ void SolverPetsc::getCurrents(std::vector<id_val>& c_n,
         int u = uv.first;
         int v = uv.second;
         c_e[e].id = e;
-        c_e[e].val = fabs(vs[v].val - vs[u].val)/getConductance(e);
+        c_e[e].val = fabs(vs[v].val - vs[u].val) * getConductance(e);
         c_n[u].id = u;
-        c_n[u].val += c_e[e].val/2.0;
+        if (isFocal(u)) {
+            c_n[u].val += c_e[e].val;
+        } else {
+            c_n[u].val += c_e[e].val/2.0;
+        }
         c_n[v].id = v;
-        c_n[v].val += c_e[e].val/2.0;
+        if (isFocal(v)) {
+            c_n[v].val += c_e[e].val;
+        } else {
+            c_n[v].val += c_e[e].val/2.0;
+        }
+
     }
     
 }

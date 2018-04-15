@@ -72,7 +72,7 @@ bool ElectricalCircuit::parseTextListFile(std::string fname) {
         int a, b;
         double c;
         iss >> a >> b >> c;
-        this->addEdge(a,b,1.0/c);
+        this->addEdge(a,b,c);
     }
 
     return true;

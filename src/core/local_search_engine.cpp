@@ -66,7 +66,7 @@ void LocalSearchEngine::findInitialSolution() {
     fillSolution(initial_solution_);
 }
     
-void LocalSearchEngine::solve() {
+Solution LocalSearchEngine::solve(JsonObject *solution_collector) {
     if (!initial_solution_.isSet()) {
         throw std::runtime_error("findInitialSolution must be called before"
                                  " calling solve!");
@@ -93,8 +93,10 @@ void LocalSearchEngine::solve() {
         solver_->solve();
         std::cout<<"Solved "<< std::endl;
         fillSolution(current);
-        current.print(std::cout,1);
-        std::cout<<current.json()<<std::endl;
+        if (solution_collector) {
+            JsonObject* solution = current.toJson();
+            solution_collector->add("solution",solution);
+        }
         if (current.objective_ < best.objective_) {
             best = current;
         }
@@ -103,6 +105,8 @@ void LocalSearchEngine::solve() {
         }
         
     }
+
+    return best;
 
     
 }

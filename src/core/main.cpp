@@ -4,7 +4,7 @@
 #include <stdlib.h>
 
 #include "utils.hpp"
-#include "ecircuit.hpp"
+#include "electrical_circuit.hpp"
 #include "solver_soplex.hpp"
 #include "solver_armadillo.hpp"
 #include "solver_iter_petsc.hpp"
@@ -20,11 +20,11 @@ int main(int argc, char* argv[]) {
     std::vector<std::pair<int,int> > p;
     //p.push_back(std::make_pair(89,1030));
     p.push_back(std::make_pair(0,10));
-    p.push_back(std::make_pair(4,15));
+    //p.push_back(std::make_pair(4,15));
     
     //SolverSoplex ss(p,SolvSoplex::UNIQUE);
     //SolverArmadillo ss(p,SolvSoplex::UNIQUE);
-    SolverPetsc ss(p,&argc,&argv,Solver::kOneMatrixPerPair);
+    SolverPetsc ss(p,&argc,&argv,Solver::kOneMatrixAllPairs);
     ss.parseTextListFile(std::string(argv[1]));
     std::cout<<"Loaded file"<<std::endl;
     //ss.printECircuit();
@@ -34,20 +34,30 @@ int main(int argc, char* argv[]) {
     accepter.setCoolingRate(0.98);
     LocalSearchEngine ls(p,&ss,&pm,&accepter);
     std::cout<<"Created model"<<std::endl;
+
+
+    JsonObject solutions;
+
     ls.findBaseSolution();
-    Solution sol;
-    sol = ls.getBaseSolution();
-    sol.print(std::cout,10);
-    std::cout<<sol.json()<<std::endl;
+    Solution base_sol = ls.getBaseSolution();
+    JsonObject* base_sol_json = base_sol.toJson();
+    solutions.add("base_solution",base_sol_json);
 
 
     ls.findInitialSolution();
-    sol = ls.getInitialSolution();
-    sol.print(std::cout,1);
+    Solution initial_sol = ls.getInitialSolution();
+    JsonObject* initial_sol_json = initial_sol.toJson();
+    solutions.add("initial_solution",initial_sol_json);
 
     ls.setTimeLimit(8);
-    ls.solve();
+    Solution best_sol = ls.solve(&solutions);
+    JsonObject* best_sol_json = best_sol.toJson();
+    solutions.add("best_solution",best_sol_json);
+
+    std::cout<<solutions.toString()<<std::endl;
     
+
+
     return 0;
 
     

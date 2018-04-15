@@ -3,6 +3,7 @@
 
 #include "electrical_circuit.hpp"
 #include <vector>
+#include <unordered_set>
 #include "utils.hpp"
 
 /*
@@ -17,11 +18,24 @@ public:
     enum MultifocalMatrixMode {kOneMatrixAllPairs, kOneMatrixPerPair};
 protected:
     std::vector<std::pair<int,int> > focals_;
+    std::unordered_set<int> focal_nodes_;
     MultifocalMatrixMode mode_;
+
+    bool isFocal(NodeID n) const {
+        return focal_nodes_.find(n) != focal_nodes_.end();
+    }
+
 public:
     //Electrical circuit and pairs of focals
     Solver(std::vector<std::pair<int,int> >& p, MultifocalMatrixMode m = MultifocalMatrixMode::kOneMatrixPerPair) :
-        focals_(p), mode_(m) {}
+        focals_(p), mode_(m) {
+
+        for (auto pair : focals_) {
+            focal_nodes_.insert(pair.first);
+            focal_nodes_.insert(pair.second);
+        }
+
+    }
 
     virtual ~Solver() {}
 
