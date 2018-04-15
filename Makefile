@@ -42,20 +42,22 @@ endif
 
 SRCS = $(wildcard ./src/core/*.cpp) 
 OBJS = $(addsuffix .o, $(basename $(SRCS)))
-DEPS = $(addsuffix .d, $(basename $(SRCS)))
+DEPS = $(OBJS:.o=.d)
+-include $(DEPS)
+
 
 all : kea
 
 kea : $(OBJS)
 	$(CC) $(CPPFLAGS) -o bin/kea-core $(OBJS) $(LIBS)
 
-#%.o : %.c
-#	$(CC) $(CPPFLAGS) $(LIBS) -o bin/kea-core $(OBJS)
+
+%.o : %.cpp
+	$(CC) $(CPPFLAGS) $(LIBS) ./src/core/ -c $< -o $@ -MMD -MF $(@:.o=.d)
+
+#%.d : %.c
+#	@$(CC) -MM -MT $(subst .d,.o,$@) -MT $@ $(CPPFLAGS) $(OBJS) $(LIBS) $< > $@
 
 clean :
 	rm -f bin/kea-core $(OBJS) $(DEPS) *~
 
--include $(DEPS)
-
-%.d: %.c
-	@$(CC) -MM -MT  $(subst .d,.o,$@) -MT $@ $(CPPFLAGS) $< > $@
