@@ -10,6 +10,7 @@
 #include "solver_iter_petsc.hpp"
 #include "accepter.hpp"
 #include "solution.hpp"
+#include "options.hpp"
 
 
 
@@ -39,16 +40,13 @@ private:
         return kDefaultAlternative;
     }
 
-    int iterations_;
-    static const int kDefaultNumIterations;
-    float time_limit_;
-    static const float kDefaultTimeLimit;
+    KeaOptions options_;
 
     void fillSolution(Solution &solution);
     
 public:
     LocalSearchEngine(std::vector<std::pair<ElectricalCircuit::NodeID, ElectricalCircuit::NodeID> > p,
-                      Solver* _s, PricingManager* _pm, Accepter* _acc);
+                      Solver* _s, PricingManager* _pm, Accepter* _acc, KeaOptions _options);
 
     virtual ~LocalSearchEngine();
 
@@ -78,16 +76,18 @@ public:
         return initial_solution_;
     }
 
-    inline void setMaxIterations(int i) {
-        if (i <= 0)
-            std::runtime_error("Cannot set number of iterations to < 1");
-        iterations_ = i;
+    inline void setMaxIterations(uint i) {
+        options_.max_iterations = i;
     }
     
     inline void setTimeLimit(float tl) {
         if (tl <= 0)
             std::runtime_error("Cannot set time limit to <= 0");
-        time_limit_ = tl;
+        options_.time_limit = tl;
+    }
+
+    inline void setOptions(KeaOptions o) {
+        options_ = o;
     }
     
     Solution solve(JsonObject* solution_collector = NULL);

@@ -63,8 +63,14 @@ int main(int argc, char* argv[]) {
         } else if (arg == "--time" || arg == "-t") {
             options.time_limit = stof(string(argv[i+1]));
             i++;
+        } else if (arg == "--iterations" || arg == "-i") {
+            options.max_iterations = stoi(string(argv[i+1]));
+            i++;
         } else if (arg == "--budget" || arg == "-b") {
             options.budget = stoi(string(argv[i+1]));
+            i++;
+        } else if (arg == "--d-rate" || arg == "-dr") {
+            options.destruction_rate = stoi(string(argv[i+1]));
             i++;
         } else if (arg == "--out" || arg == "-o") {
             options.output_json_file = string(argv[i+1]);
@@ -102,8 +108,7 @@ int main(int argc, char* argv[]) {
     accepter.setTemperature(options.simulated_annealing_temperature);
     accepter.setCoolingRate(options.simulated_annealing_cooling_rate);
     cout<<"Compiling matrix for computation..."<<endl;
-    LocalSearchEngine ls(focal_pairs,solver,&pm,&accepter);
-    ls.setTimeLimit(options.time_limit);
+    LocalSearchEngine ls(focal_pairs,solver,&pm,&accepter,options);
     cout<<"Done"<<endl;
 
     JsonObject solutions;

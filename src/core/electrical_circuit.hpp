@@ -27,7 +27,10 @@ public:
     //Returns the id of the new node
     NodeID addNode();
 
-    inline int nbNodes() const {return node_edge_map_.size(); }
+    inline int nbNodes() const {
+        return node_edge_map_.size();
+    }
+
     inline int nbEdges(int node = -1) const {
         assert(node >= -1);
         if (node == -1) {
@@ -54,7 +57,7 @@ public:
         conductances_[e] = c;
     }
     
-    std::pair<NodeID,NodeID> getNodes(EdgeID e) {
+    inline std::pair<NodeID,NodeID> getNodes(EdgeID e) {
         return edges_[e];
     }
 

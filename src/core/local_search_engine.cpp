@@ -6,14 +6,12 @@
 using namespace std;
 
 const double LocalSearchEngine::kDefaultAlternative = 1;
-const int LocalSearchEngine::kDefaultNumIterations = 50;
-const float LocalSearchEngine::kDefaultTimeLimit = 200.0;
 
 LocalSearchEngine::LocalSearchEngine(vector<pair<ElectricalCircuit::NodeID,ElectricalCircuit::NodeID> > p,
                                      Solver* _s, PricingManager* _pm,
-                                     Accepter* _acc)
+                                     Accepter* _acc, const KeaOptions options)
     : focals_(p),solver_(_s),pricing_manager_(_pm),accepter_(_acc),
-      iterations_(kDefaultNumIterations),time_limit_(kDefaultTimeLimit){
+      options_(options){
     solver_->compile();
     vector<id_val> original_alternative;
     for (int i = 0; i < solver_->nbEdges(); i++) {
@@ -73,8 +71,8 @@ Solution LocalSearchEngine::solve(JsonObject *solution_collector) {
         throw runtime_error("findInitialSolution must be called before"
                                  " calling solve!");
     }
-    int iterations = -1;
-    int solutions = 0;
+    uint iterations = 0;
+    uint solutions = 0;
     Solution current = initial_solution_;
     Solution accepted = initial_solution_;
     Solution best = initial_solution_;
@@ -83,14 +81,13 @@ Solution LocalSearchEngine::solve(JsonObject *solution_collector) {
    
     clock_t begin_time = clock();
 
-    while (iterations < iterations_ &&
-           float(clock() - begin_time)/CLOCKS_PER_SEC < time_limit_) {
-        iterations++;
+    while (iterations < options_.max_iterations &&
+           float(clock() - begin_time)/CLOCKS_PER_SEC < options_.time_limit) {
         cout<<"\tLocal Search iteration "<< iterations <<endl;
 
         vector<id_val> updates;
         //Destroy accepted solution
-        Destroyer des(this,pricing_manager_,Destroyer::kLeastCurrent,Destroyer::kHighCurrentProbability,5);
+        Destroyer des(this,pricing_manager_,Destroyer::kLeastCurrent,Destroyer::kHighCurrentProbability,options_.destruction_rate);
         cout<<"\tDestruction phase " <<endl;
         des.destroy(accepted,current,updates);
 
@@ -112,6 +109,7 @@ Solution LocalSearchEngine::solve(JsonObject *solution_collector) {
         if (accepter_->accept(current.objective_)) {
             accepted = current;
         }
+        iterations++;
         
     }
     if (solution_collector) {

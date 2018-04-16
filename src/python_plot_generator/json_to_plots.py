@@ -34,6 +34,7 @@ def plotMap(matrix, fig, ax):
     cm = None
     #c = m.colors.ColorConverter().to_rgb
     #cm = makeColormap([(0,1,0), (1,1,0), 0.1, (1,1,0), (1,0.5,0), 0.66, (1,0.5,0),(1,0,0)])
+    #cm = makeColormap([(0,0.011,0.176), (1,1,0), 0.1, (1,1,0), (1,0.5,0), 0.66, (1,0.5,0),(1,1,1)])
     
     # Build the heatmap
     heatmap = ax.pcolor(matrix, cmap=cm)
@@ -133,7 +134,8 @@ def readSolutions(json_filename, plot_intermediate = False):
     plt.show()
 
 
-readSolutions(sys.argv[1])
+if __name__ == "__main__":
+    readSolutions(sys.argv[1])
 
 
 
