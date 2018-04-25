@@ -8,21 +8,26 @@ class Destroyer {
 public:
     enum RemoveInvestment {kRandomRemove, kLeastCurrent, kLowCurrentProbability};
     enum NewInvestment {kRandomAdd, kBfs, kBfsRandom, kHighestCurrent, kHighCurrentProbability};
+
 private:
+
     LocalSearchEngine* local_search_;
     PricingManager* pricing_manager_;
     RemoveInvestment remove_strategy_;
     NewInvestment add_strategy_;
+
     //Rate is just a counter of edges for now.
     //Maybe crete a mode where its s budget instead?
     int destruction_rate_;
     int consumed_rate_;
+
     bool hasAvailableRate() {return consumed_rate_ < destruction_rate_; }
-    void removeInvestment(int e) {
+
+    inline void removeInvestment(int e) {
         pricing_manager_->save(pricing_manager_->getCost(e));
     }
 
-    //Temporaary state:
+    //Temporary state. Marks edges that have been dis-invested
     std::vector<bool> changed_;
 
     float getMaxCurrent(Solution& sol);
@@ -44,8 +49,8 @@ protected:
                             Solution& new_sol,
                             std::vector<id_val>& model_update);
     void destroyLeastCurrentEdges(Solution& sol,
-                         Solution& new_sol,
-                         std::vector<id_val>& model_update);
+                            Solution& new_sol,
+                            std::vector<id_val>& model_update);
     void destroyLowCurrentEdgesProb(Solution& sol,
                             Solution& new_sol,
                             std::vector<id_val>& model_update);

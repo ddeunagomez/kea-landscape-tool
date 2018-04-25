@@ -46,8 +46,7 @@ public:
 
     void getVoltages(std::vector< std::vector<id_val> >& each,
                      std::vector<id_val>& all);
-    void getCurrents(std::vector<id_val>& c_n,
-                     std::vector<id_val>& c_e);
+
 };
 
 #endif /*SOLVER_USE_PETSC */

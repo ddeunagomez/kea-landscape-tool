@@ -260,38 +260,4 @@ void SolverPetsc::getVoltages(std::vector< std::vector<id_val> >& each,
     
 }
 
-void SolverPetsc::getCurrents(std::vector<id_val>& c_n,
-                              std::vector<id_val>& c_e) {
-
-    std::vector<id_val> dummy;
-    std::vector< std::vector<id_val> > vs;
-    getVoltages(vs, dummy);
-    c_n = std::vector<id_val>(nbNodes(),0);
-    c_e = std::vector<id_val>(nbEdges(),0);
-
-    for (int c = 0; c < vs.size(); c++) {
-        for (int e = 0; e < nbEdges(); e++) {
-            std::pair<NodeID,NodeID> uv = getNodes(e);
-            int u = uv.first;
-            int v = uv.second;
-            c_e[e].id = e;
-            c_e[e].val = fabs(vs[c][v].val - vs[c][u].val) * getConductance(e);
-            c_n[u].id = u;
-            if (isFocal(u)) {
-                c_n[u].val += c_e[e].val;
-            } else {
-                c_n[u].val += c_e[e].val/2.0;
-            }
-            c_n[v].id = v;
-            if (isFocal(v)) {
-                c_n[v].val += c_e[e].val;
-            } else {
-                c_n[v].val += c_e[e].val/2.0;
-            }
-
-        }
-    }
-    
-}
-
 #endif /*SOLVER_USE_PETSC */

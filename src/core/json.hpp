@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <stdexcept>
 
 /*
  *  This is a set of simple JSON classes for the purpose of this project.
@@ -13,30 +14,16 @@
 class JsonObject {
     std::vector<std::pair<std::string, JsonObject*>> map_;
 public:
-    virtual void add(std::string key, JsonObject* value) {
-        if (value == this) {
-            throw std::invalid_argument("Cannot aattach Json Object to itself.");
-        }
-        map_.push_back(std::make_pair(key,value));
-    }
-    virtual std::string toString() const {
-        std::string result = "{\n";
-        for (uint i = 0; i < map_.size(); i++) {
-            std::string k = map_[i].first;
-            JsonObject* jo = map_[i].second;
-            result += "\"" + k +"\" : ";
-            result += jo->toString();
-            if (i < map_.size() -1 )
-                result +=",\n";
-        }
-        result += "\n}";
-        return result;
-    }
 
-    virtual ~JsonObject() {
-        for (uint i = 0; i < map_.size(); i++)
-            delete map_[i].second;
-    }
+    /* Add pair (key,value)
+     */
+    virtual void add(std::string key, JsonObject* value);
+
+    /* Serialize JSON object
+     */
+    virtual std::string toString() const;
+
+    virtual ~JsonObject();
 };
 
 class JsonLiteral : public JsonObject{
@@ -51,47 +38,32 @@ public:
 class JsonBool : public JsonLiteral {
     bool value_;
 public:
-    JsonBool(bool v) : value_(v) { }
-    std::string toString() const { return value_ ? "true" : "false"; }
+    JsonBool(bool v);
+    std::string toString() const;
 };
 
 class JsonInt : public JsonLiteral {
     int value_;
 public:
-    JsonInt(int v) : value_(v) { }
-    std::string toString() const { return std::to_string(value_); }
+    JsonInt(int v);
+    std::string toString() const;
 };
 
 class JsonFloat : public JsonLiteral {
     float value_;
     int precision_;
 public:
-    JsonFloat(float v, int precision = 5) : value_(v), precision_(precision) { }
-    std::string toString() const { return std::to_string(value_); }
+    JsonFloat(float v, int precision = 5);
+    std::string toString() const;
 };
 
 class JsonList : public JsonObject {
     std::vector<JsonObject*> elements_;
 public:
-    void add(JsonObject* o) {
-        elements_.push_back(o);
-    }
-    void add(std::string key, JsonObject* value) {
-        throw std::invalid_argument("Cannot add to a JsonList");
-    }
-    std::string toString() const {
-        std::string result = "[";
-        for (uint i = 0; i < elements_.size(); i++) {
-            result += elements_[i]->toString() + (i == elements_.size() - 1 ? "" : ",");
-        }
-        result += "]";
-        return result;
-    }
-
-    virtual ~JsonList() {
-        for (uint i = 0; i < elements_.size(); i++)
-            delete elements_[i];
-    }
+    void add(JsonObject* o);
+    void add(std::string key, JsonObject* value);
+    std::string toString() const;
+    virtual ~JsonList();
 };
 
 #endif // JSON_HPP

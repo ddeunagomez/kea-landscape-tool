@@ -24,55 +24,48 @@ protected:
     std::unordered_set<NodeID> focal_nodes_;
     MultifocalMatrixMode mode_;
 
-    bool isFocal(NodeID n) const {
+    inline bool isFocal(NodeID n) const {
         return focal_nodes_.find(n) != focal_nodes_.end();
     }
 
 public:
-    Solver(const std::vector<std::pair<NodeID,NodeID> >& p, MultifocalMatrixMode m = MultifocalMatrixMode::kOneMatrixPerPair) :
-        focals_(p), mode_(m) {
-
-        for (auto pair : focals_) {
-            focal_nodes_.insert(pair.first);
-            focal_nodes_.insert(pair.second);
-        }
-
-    }
+    Solver(const std::vector<std::pair<NodeID,NodeID> >& p, MultifocalMatrixMode m = MultifocalMatrixMode::kOneMatrixPerPair);
 
     virtual ~Solver() {}
 
-    virtual bool compile() {
-        for (uint i = 0; i < focals_.size(); i++)
-            if (focals_[i].first < 0 || focals_[i].first >= nbNodes() ||
-                focals_[i].second < 0 || focals_[i].second >= nbNodes())
-                throw std::runtime_error("Invalid values for focal "
-                                         +std::to_string(i)+"\n");
-        if (nbNodes() <= 1)
-            throw std::runtime_error("Invalid network: too few nodes\n");
-        if (focals_.size() == 0)
-            throw std::runtime_error("No focal specicified\n");
-        return true;
-    }
+    /* Gets the backend solver ready.
+     * Only to be called after feeding all the conductances/edges and nodes to the object.
+     * It verifies that the focals given are valid (within the terrain).
+     */
+    virtual bool compile();
     
+
+    /* Update the conductances of the electrical network.
+     * Given by pairs (EdgeID, conductance (in ohm^-1))
+     */
     virtual void updateConductances(std::vector<id_val>& ev) {
         throw unimplemented_solver("updateConductances");
     }
     
+    /* Runs the backend solver.
+     * Return true if the solver succeeds. False otherwise
+     */
     virtual bool solve() {
         throw unimplemented_solver("solve");
     };
 
-    //Voltages indexed by node ids
+    /* Voltages are given in pairs (NodeID, voltage)
+     * each: there will be one voltage for each node, for each circuit (in case of multiple pairs of focals).
+     * all: there will be one voltage for each node, all circuits combined (summed up).
+     */
     virtual void getVoltages(std::vector< std::vector<id_val> >& each,
                              std::vector<id_val>& all) {
         throw unimplemented_solver("getVoltages");
     };
+
     //Currents by node and by edge
     virtual void getCurrents(std::vector<id_val>& c_n,
-                             std::vector<id_val>& c_e) {
-
-        throw unimplemented_solver("getCurrents");
-    }
+                             std::vector<id_val>& c_e);
 
 };
 
