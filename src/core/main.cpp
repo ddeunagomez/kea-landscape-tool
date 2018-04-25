@@ -16,6 +16,31 @@
 
 using namespace std;
 
+void printHelp(string bin) {
+    cout<< "Usage of the tool: " <<bin<<" network_filename.ntw [options]"<<endl;
+
+    cout << "  --solver or -s: backend solver. Choose among soplex, armadillo (using LaPack) or petsc"<<endl;
+
+    cout<< "  --focals or -f: specify any number of focal nodes in the network in the format x,y,x,t"<<endl;
+
+    cout<< "  --time or -t: maximum solving time in total"<<endl;
+
+    cout<< "  --iterations or -i: maximum number of iterations for solving in total"<<endl;
+
+    cout<< "  --budget or -b: maximum allocated budget for landscape improvement"<<endl;
+
+    cout << "  --out or -o: output JSON file where all solutions will be saved in JSON format"<<endl;
+
+
+    cout<< "Local Search arguments:"<<endl;
+
+    cout<< "  --d-rate or -dr: destruction rate at each iteration"<<endl;
+
+    cout<< "  --sa-temp: simulated annealing intial temperature"<<endl;
+
+    cout<< "  --sa-cooling: simulated annealing cooling rate"<<endl;
+}
+
 vector<ElectricalCircuit::NodeID> parseFocalsArgument(string list) {
     vector<ElectricalCircuit::NodeID> result;
     std::string token;
@@ -42,7 +67,14 @@ AvailableSolvers parseSolverName(string name) {
 int main(int argc, char* argv[]) {
     
     std::cout<< "=== Kea Landscape Tool ==="<<std::endl;
+
+    if (argc == 1) {
+        printHelp((string(argv[0])));
+        return 0;
+    }
+
     srand(time(NULL));
+
 
     //Read command line arguments
 
@@ -78,9 +110,11 @@ int main(int argc, char* argv[]) {
         } else if (arg == "--sa-temp") {
             options.simulated_annealing_temperature = stof(string(argv[i+1]));
             i++;
-        }  else if (arg == "--sa-cooling") {
+        } else if (arg == "--sa-cooling") {
             options.simulated_annealing_cooling_rate = stof(string(argv[i+1]));
             i++;
+        } else if (arg == "--help" || arg == "-h") {
+            printHelp(string(argv[0]));
         }
 
     }
