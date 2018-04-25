@@ -16,15 +16,15 @@ inline bool file_exists (const std::string& name) {
 }
 
 class unimplemented_solver: public std::runtime_error {
-    std::string msg;
+    std::string msg_;
 public:
     unimplemented_solver(const std::string meth) :
         std::runtime_error("Unimplemented method:") {
-        msg = "Unimplemented method for the chosen solver: " + meth;
+        msg_ = "Unimplemented method for the chosen solver: " + meth;
     }
     virtual ~unimplemented_solver() throw() {}
     virtual const char *what() const throw() {
-        return msg.c_str();
+        return msg_.c_str();
     }
 };
 
